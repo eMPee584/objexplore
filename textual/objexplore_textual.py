@@ -111,9 +111,16 @@ class ChildrenWidget(Static):
     def compose(self):
         with Vertical():
             yield Input()
+            yield Static()
 
-            for child_label in self.get_child_labels():
-                yield ChildWidget(parent_object=self.obj, child_label=child_label)
+            yield ScrollableContainer(
+                *[
+                    ChildWidget(parent_object=self.obj, child_label=child_label)
+                    for child_label in self.get_child_labels()
+                ]
+            )
+            # for child_label in self.get_child_labels():
+            #     yield ChildWidget(parent_object=self.obj, child_label=child_label)
 
     def get_child_labels(self):
         return []
