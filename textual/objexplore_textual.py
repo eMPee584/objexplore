@@ -7,6 +7,7 @@ import textual.app
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.driver import Driver
+from textual.reactive import reactive
 from textual.widgets import (
     Button,
     Footer,
@@ -77,6 +78,15 @@ def get_inspect(
     return _inspect
 
 
+class InspectWidget(Static):
+    def __init__(self, obj, **kwargs):
+        self.obj = obj
+        super().__init__(get_inspect(obj), **kwargs)
+
+    def compose(self):
+        yield Static(get_inspect(self.obj))
+
+
 class ObjectExplorer(App):
     """A Textual app to manage stopwatches."""
 
@@ -94,22 +104,18 @@ class ObjectExplorer(App):
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
         yield Header(show_clock=True)
+
         with Horizontal():
             with Vertical(classes="column"):
                 tree = Tree(self.obj.__name__)
-                # root_obj = tree.root.add(self.obj.__name__)
+
                 for sub_obj in dir(self.obj):
                     tree.root.add_leaf(sub_obj)
-                # foo = tree.root.add("foo", expand=False)
-                # foo.add_leaf("bar")
-                # foo.add_leaf("baz")
+
                 yield tree
 
             with Vertical(classes="column"):
-                # with console.capture() as capture:
-                #     rich.inspect(self.selected_obj)
-
-                yield Static(get_inspect(self.obj))
+                yield InspectWidget(obj=self.obj)
 
         yield Footer()
 
@@ -125,11 +131,12 @@ class ObjectExplorer(App):
         if node.node.is_root:
             return
 
-        # with self.suspend():
-        #     breakpoint()
-        #     print("hello")
-
-        self.obj = getattr(self.obj, str(node.node.label))
+        try:
+            self.obj = getattr(self.obj, str(node.node.label))
+        except:
+            with self.suspend():
+                breakpoint()
+                print("hello")
 
 
 if __name__ == "__main__":
