@@ -1,3 +1,4 @@
+from logging import PlaceHolder
 from typing import Any, Optional, Type
 
 import rich
@@ -142,7 +143,7 @@ class SearchableChildrenWidget(Static):
     def compose(self):
         with Vertical():
             yield Input(placeholder="Search Attributes")
-            yield Static()
+            yield Label()
             yield ChildrenWidget(
                 parent_object=self.obj, child_labels=self.get_child_labels()
             )
