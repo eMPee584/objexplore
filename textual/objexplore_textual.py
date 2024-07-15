@@ -1,20 +1,24 @@
+from ast import In
 from typing import Any, Optional, Type
 
 import rich
+from numpy import argsort, isin
 
 import textual
 import textual.app
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.driver import Driver
 from textual.reactive import reactive
 from textual.widgets import (
     Button,
     Footer,
     Header,
+    Input,
     Label,
     Placeholder,
     Static,
+    TabbedContent,
     TextArea,
     Tree,
 )
@@ -87,6 +91,55 @@ class InspectWidget(Static):
         yield Static(get_inspect(self.obj))
 
 
+class ChildWidget(Static):
+    def __init__(self, parent_object, child_label, *args, **kwargs):
+        self.parent_object = parent_object
+        self.child_label = child_label
+        super().__init__(*args, **kwargs)
+
+    def compose(self):
+        actual_child_object = getattr(self.parent_object, self.child_label)
+
+        yield Label(str(self.child_label))
+
+
+class ChildrenWidget(Static):
+    def __init__(self, obj, *args, **kwargs):
+        self.obj = obj
+        super().__init__(*args, **kwargs)
+
+    def compose(self):
+        with Vertical():
+            yield Input()
+
+            for child_label in self.get_child_labels():
+                yield ChildWidget(parent_object=self.obj, child_label=child_label)
+
+    def get_child_labels(self):
+        return []
+
+
+class PublicChildrenWidget(ChildrenWidget):
+    def get_child_labels(self):
+        return [k for k in dir(self.obj) if not k.startswith("_")]
+
+
+class PrivateChildrenWidget(ChildrenWidget):
+    def get_child_labels(self):
+        return [k for k in dir(self.obj) if k.startswith("_")]
+
+
+class DirectoryWidget(Static):
+    def __init__(self, obj, *args, **kwargs):
+        self.obj = obj
+        super().__init__(*args, **kwargs)
+
+    def compose(self):
+        with TabbedContent("Public", "Private"):
+            yield PublicChildrenWidget(obj=self.obj)
+            yield PrivateChildrenWidget(obj=self.obj)
+
+
 class ObjectExplorer(App):
     """A Textual app to manage stopwatches."""
 
@@ -97,8 +150,6 @@ class ObjectExplorer(App):
 
     def __init__(self, *args, obj, **kwargs):
         self.obj = obj
-        self.selected_obj = obj
-
         super().__init__(*args, **kwargs)
 
     def compose(self) -> ComposeResult:
@@ -107,15 +158,10 @@ class ObjectExplorer(App):
 
         with Horizontal():
             with Vertical(classes="column"):
-                tree = Tree(self.obj.__name__)
-
-                for sub_obj in dir(self.obj):
-                    tree.root.add_leaf(sub_obj)
-
-                yield tree
+                yield DirectoryWidget(obj=self.obj)
 
             with Vertical(classes="column"):
-                yield InspectWidget(obj=self.obj)
+                yield Static("Test")
 
         yield Footer()
 
@@ -140,5 +186,5 @@ class ObjectExplorer(App):
 
 
 if __name__ == "__main__":
-    app = ObjectExplorer(obj=Button)
+    app = ObjectExplorer(obj=console)
     app.run()
