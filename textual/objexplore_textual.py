@@ -1,11 +1,7 @@
-import re
-from ast import In
 from typing import Any, Optional, Type
 
 import rich
-from numpy import argsort, isin
 
-import textual.app
 from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, ScrollableContainer, Vertical
@@ -20,6 +16,7 @@ from textual.widgets import (
     Placeholder,
     Static,
     TabbedContent,
+    TabPane,
     TextArea,
     Tree,
 )
@@ -104,9 +101,39 @@ class ChildWidget(Static):
         yield Label(str(self.child_label))
 
 
-class ChildrenWidget(Static):
+class Name(Static):
 
-    search_query = reactive("")
+    who = reactive("world")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.who = "world"
+
+    def render(self):
+        return f"Hello, {self.who}!"
+
+
+class ChildrenWidget(Static):
+    search_query = reactive("", recompose=True)
+
+    def __init__(self, parent_object, child_labels, *args, **kwargs):
+        self.parent_object = parent_object
+        self.children_widgets = child_labels
+        super().__init__(*args, **kwargs)
+
+    def compose(self):
+        with ScrollableContainer():
+            for child_label in [
+                child
+                for child in self.children_widgets
+                if self.search_query.lower() in child.lower()
+            ]:
+                yield ChildWidget(
+                    parent_object=self.parent_object, child_label=child_label
+                )
+
+
+class SearchableChildrenWidget(Static):
 
     def __init__(self, obj, *args, **kwargs):
         self.obj = obj
@@ -116,39 +143,31 @@ class ChildrenWidget(Static):
         with Vertical():
             yield Input(placeholder="Search Attributes")
             yield Static()
-
-            yield ScrollableContainer(
-                *[
-                    ChildWidget(parent_object=self.obj, child_label=child_label)
-                    for child_label in self.get_child_labels()
-                ]
+            yield ChildrenWidget(
+                parent_object=self.obj, child_labels=self.get_child_labels()
             )
 
     @on(Input.Changed)
     def update_search_query(self, event: Input.Changed):
-        self.search_query = event.value
+        self.query_one(ChildrenWidget).search_query = event.value
 
     def get_child_labels(self):
         return []
 
 
-class PublicChildrenWidget(ChildrenWidget):
+class PublicChildrenWidget(SearchableChildrenWidget):
     def get_child_labels(self):
         return [
             child_label
             for child_label in dir(self.obj)
             if not child_label.startswith("_")
-            and self.search_query.lower() in child_label.lower()
         ]
 
 
-class PrivateChildrenWidget(ChildrenWidget):
+class PrivateChildrenWidget(SearchableChildrenWidget):
     def get_child_labels(self):
         return [
-            child_label
-            for child_label in dir(self.obj)
-            if child_label.startswith("_")
-            and self.search_query.lower() in child_label.lower()
+            child_label for child_label in dir(self.obj) if child_label.startswith("_")
         ]
 
 
@@ -158,9 +177,21 @@ class DirectoryWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        with TabbedContent("Public", "Private"):
-            yield PublicChildrenWidget(obj=self.obj)
-            yield PrivateChildrenWidget(obj=self.obj)
+        with TabbedContent():
+            with TabPane("Public", id="public"):
+                yield PublicChildrenWidget(obj=self.obj)
+            with TabPane("Private", id="private"):
+                yield PrivateChildrenWidget(obj=self.obj)
+
+    # @on(Input.Changed)
+    # def update_search_query(self, event: Input.Changed):
+    #     active_tab = self.query_one(TabbedContent).active
+
+    #     if active_tab == "public":
+    #         self.query_one(PublicChildrenWidget).search_query = event.value
+
+    #     elif active_tab == "private":
+    #         self.query_one(PrivateChildrenWidget).search_query = event.value
 
 
 class ObjectExplorer(App):
