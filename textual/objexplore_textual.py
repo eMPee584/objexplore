@@ -1,11 +1,12 @@
+import re
 from ast import In
 from typing import Any, Optional, Type
 
 import rich
 from numpy import argsort, isin
 
-import textual
 import textual.app
+from textual import on
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.driver import Driver
@@ -104,13 +105,16 @@ class ChildWidget(Static):
 
 
 class ChildrenWidget(Static):
+
+    search_query = reactive("")
+
     def __init__(self, obj, *args, **kwargs):
         self.obj = obj
         super().__init__(*args, **kwargs)
 
     def compose(self):
         with Vertical():
-            yield Input()
+            yield Input(placeholder="Search Attributes")
             yield Static()
 
             yield ScrollableContainer(
@@ -119,8 +123,10 @@ class ChildrenWidget(Static):
                     for child_label in self.get_child_labels()
                 ]
             )
-            # for child_label in self.get_child_labels():
-            #     yield ChildWidget(parent_object=self.obj, child_label=child_label)
+
+    @on(Input.Changed)
+    def update_search_query(self, event: Input.Changed):
+        self.search_query = event.value
 
     def get_child_labels(self):
         return []
@@ -128,12 +134,22 @@ class ChildrenWidget(Static):
 
 class PublicChildrenWidget(ChildrenWidget):
     def get_child_labels(self):
-        return [k for k in dir(self.obj) if not k.startswith("_")]
+        return [
+            child_label
+            for child_label in dir(self.obj)
+            if not child_label.startswith("_")
+            and self.search_query.lower() in child_label.lower()
+        ]
 
 
 class PrivateChildrenWidget(ChildrenWidget):
     def get_child_labels(self):
-        return [k for k in dir(self.obj) if k.startswith("_")]
+        return [
+            child_label
+            for child_label in dir(self.obj)
+            if child_label.startswith("_")
+            and self.search_query.lower() in child_label.lower()
+        ]
 
 
 class DirectoryWidget(Static):
