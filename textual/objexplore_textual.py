@@ -2,6 +2,8 @@ from typing import Any, Optional, Type
 
 import rich
 
+import textual
+import textual.app
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.driver import Driver
@@ -107,7 +109,7 @@ class ObjectExplorer(App):
                 # with console.capture() as capture:
                 #     rich.inspect(self.selected_obj)
 
-                yield Static(get_inspect(self.selected_obj))
+                yield Static(get_inspect(self.obj))
 
         yield Footer()
 
@@ -120,7 +122,14 @@ class ObjectExplorer(App):
         self.dark = not self.dark
 
     def on_tree_node_selected(self, node):
-        self.selected_obj = getattr(self.obj, node.label)
+        if node.node.is_root:
+            return
+
+        # with self.suspend():
+        #     breakpoint()
+        #     print("hello")
+
+        self.obj = getattr(self.obj, str(node.node.label))
 
 
 if __name__ == "__main__":
