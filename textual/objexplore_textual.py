@@ -204,6 +204,9 @@ class ChildrenWidget(Static):
     def get_option_for_child(self, child_label):
         child_object = getattr(self.parent_object, child_label)
 
+        if child_object is None:
+            return Option(f"[strike][dim]{child_label}[/]")
+
         if inspect.isclass(child_object):
             return Option(f"[magenta]{child_label}[/]")
 
@@ -216,6 +219,18 @@ class ChildrenWidget(Static):
         return Option(child_label)
 
 
+class MyInput(Input):
+    BINDINGS = [
+        (
+            "escape",
+            "leave_focus",
+        )
+    ]
+
+    def action_leave_focus(self):
+        self.blur()
+
+
 class SearchableChildrenWidget(Static):
 
     def __init__(self, obj, *args, **kwargs):
@@ -223,7 +238,7 @@ class SearchableChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield Input(placeholder="Search Attributes")
+        yield MyInput(placeholder="Search Attributes")
         with VerticalScroll():
             yield ChildrenWidget(
                 parent_object=self.obj, child_labels=self.get_child_labels()
@@ -254,6 +269,13 @@ class PrivateChildrenWidget(SearchableChildrenWidget):
 
 
 class DirectoryWidget(Static):
+
+    BINDINGS = [
+        ("[", "toggle_public_private"),
+        ("]", "toggle_public_private"),
+        ("/", "focus_search"),
+    ]
+
     def __init__(self, obj, *args, **kwargs):
         self.obj = obj
         super().__init__(*args, **kwargs)
@@ -264,6 +286,17 @@ class DirectoryWidget(Static):
                 yield PublicChildrenWidget(obj=self.obj)
             with TabPane("Private", id="private"):
                 yield PrivateChildrenWidget(obj=self.obj)
+
+    def action_toggle_public_private(self):
+        tabbed_content = self.query_one(TabbedContent)
+
+        if tabbed_content.active == "public":
+            tabbed_content.active = "private"
+        else:
+            tabbed_content.active = "public"
+
+    def action_focus_search(self):
+        self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
 
 class ObjectExplorer(App):
