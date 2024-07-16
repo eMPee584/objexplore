@@ -1,3 +1,4 @@
+import inspect
 from tkinter import Place
 from typing import Any, Optional, Type
 
@@ -14,6 +15,7 @@ from textual.containers import (
     VerticalScroll,
 )
 from textual.driver import Driver
+from textual.events import Enter, Leave
 from textual.reactive import reactive
 from textual.widgets import (
     Button,
@@ -118,15 +120,23 @@ class ChildWidget(Static):
     def on_mount(self):
         self.styles.height = "auto"
 
+    def _on_enter(self, event: Enter) -> None:
+        # self.original_background = self.styles.background
+        # self.styles.background = "red"
+        return super()._on_enter(event)
+
+    def _on_leave(self, event: Leave) -> None:
+        # self.styles.background = self.original_background
+        return super()._on_leave(event)
+
     def compose(self):
         actual_child_object = getattr(self.parent_object, self.child_label)
 
         with Horizontal() as h:
             h.styles.height = "auto"
-            h.styles.padding = (1, 1)
-            yield Label(self.child_label)
+            label = Label(self.child_label)
+            label.styles.padding = (0, 1)
             pretty = Pretty(type(actual_child_object))
-            # pretty.styles.
             yield pretty
 
         # with Grid() as g:
@@ -164,31 +174,46 @@ class ChildrenWidget(Static):
 
     def __init__(self, parent_object, child_labels, *args, **kwargs):
         self.parent_object = parent_object
-        self.children_widgets = child_labels
+        self.child_labels = child_labels
         super().__init__(*args, **kwargs)
 
     def compose(self):
 
-        with ListView():
-            for child_label in [
-                child
-                for child in self.children_widgets
-                if self.search_query.lower() in child.lower()
-            ]:
-                yield ListItem(
-                    ChildWidget(
-                        parent_object=self.parent_object, child_label=child_label
-                    )
-                    # Static(child_label)
-                )
+        # with ListView():
+        #     for child_label in [
+        #         child
+        #         for child in self.child_labels
+        #         if self.search_query.lower() in child.lower()
+        #     ]:
+        #         yield ListItem(
+        #             ChildWidget(
+        #                 parent_object=self.parent_object, child_label=child_label
+        #             )
+        #             # Static(child_label)
+        #         )
 
-        # yield OptionList(
-        #     *[
-        #         Static(child_label)
-        #         for child_label in self.children_widgets
-        #         if self.search_query.lower() in child_label.lower()
-        #     ]
-        # )
+        yield OptionList(
+            *[
+                # Option(f"[cyan]{child_label}[/]")
+                self.get_option_for_child(child_label)
+                for child_label in self.child_labels
+                if self.search_query.lower() in child_label.lower()
+            ]
+        )
+
+    def get_option_for_child(self, child_label):
+        child_object = getattr(self.parent_object, child_label)
+
+        if inspect.isclass(child_object):
+            return Option(f"[magenta]{child_label}[/]")
+
+        if callable(child_object):
+            return Option(f"[cyan][i]{child_label}[/cyan]()[/i]")
+
+        if isinstance(child_object, dict):
+            return Option("{**[cyan]" + child_label + "[/]}")
+
+        return Option(child_label)
 
 
 class SearchableChildrenWidget(Static):
@@ -198,8 +223,8 @@ class SearchableChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        with Vertical():
-            yield Input(placeholder="Search Attributes")
+        yield Input(placeholder="Search Attributes")
+        with VerticalScroll():
             yield ChildrenWidget(
                 parent_object=self.obj, child_labels=self.get_child_labels()
             )
@@ -257,14 +282,10 @@ class ObjectExplorer(App):
         """Create child widgets for the app."""
         yield Header(show_clock=True)
 
-        with Horizontal():
-            with Vertical(classes="column"):
-                yield DirectoryWidget(obj=self.obj)
+        with Vertical(classes="column"):
+            yield DirectoryWidget(obj=self.obj)
 
-            with Vertical(classes="column"):
-                yield Static("Test")
-
-        yield Footer()
+        # yield Footer()
 
     def action_request_quit(self) -> None:
         """Action to display the quit dialog."""
@@ -274,16 +295,16 @@ class ObjectExplorer(App):
         """An action to toggle dark mode."""
         self.dark = not self.dark
 
-    def on_tree_node_selected(self, node):
-        if node.node.is_root:
-            return
+    # def on_tree_node_selected(self, node):
+    #     if node.node.is_root:
+    #         return
 
-        try:
-            self.obj = getattr(self.obj, str(node.node.label))
-        except:
-            with self.suspend():
-                breakpoint()
-                print("hello")
+    #     try:
+    #         self.obj = getattr(self.obj, str(node.node.label))
+    #     except:
+    #         with self.suspend():
+    #             breakpoint()
+    #             print("hello")
 
 
 if __name__ == "__main__":
