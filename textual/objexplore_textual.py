@@ -1,3 +1,4 @@
+from tkinter import Place
 from typing import Any, Optional, Type
 
 import rich
@@ -20,14 +21,19 @@ from textual.widgets import (
     Header,
     Input,
     Label,
+    ListItem,
+    ListView,
+    OptionList,
     Placeholder,
     Pretty,
+    Rule,
     Static,
     TabbedContent,
     TabPane,
     TextArea,
     Tree,
 )
+from textual.widgets.option_list import Option, Separator
 
 console = rich.get_console()
 
@@ -98,33 +104,39 @@ class InspectWidget(Static):
 
 
 class ChildWidget(Static):
+    DEFAULT_CSS = """
+    Grid {
+        grid-size: 2 1;
+    }
+    """
+
     def __init__(self, parent_object, child_label, *args, **kwargs):
         self.parent_object = parent_object
         self.child_label = child_label
         super().__init__(*args, **kwargs)
 
     def on_mount(self):
-        # self.styles.border = ("solid", "green")
-        self.styles.layout = "horizontal"
         self.styles.height = "auto"
-        # self.styles.width = "auto"
 
     def compose(self):
         actual_child_object = getattr(self.parent_object, self.child_label)
 
-        with Horizontal() as h:
-            h.styles.height = "auto"
+        # with Horizontal() as h:
+        #     h.styles.height = "auto"
+        #     yield Label(self.child_label)
+        #     pretty = Pretty(type(actual_child_object))
+        #     # pretty.styles.
+        #     yield pretty
+
+        with Grid() as g:
+            g.styles.height = "auto"
             yield Label(self.child_label)
             yield Pretty(type(actual_child_object))
+            # yield Placeholder()
+            # yield Placeholder()
 
 
 class ChildrenWidget(Static):
-    # DEFAULT_CSS = """
-    # ChildWidget {
-    #     layout: horizontal;
-    #     # border: solid green
-    # }
-    # """
     search_query = reactive("", recompose=True)
 
     def __init__(self, parent_object, child_labels, *args, **kwargs):
@@ -133,16 +145,26 @@ class ChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        with VerticalScroll():
+        with ListView():
             for child_label in [
                 child
                 for child in self.children_widgets
                 if self.search_query.lower() in child.lower()
             ]:
-                yield ChildWidget(
-                    parent_object=self.parent_object,
-                    child_label=child_label,
+                yield ListItem(
+                    ChildWidget(
+                        parent_object=self.parent_object, child_label=child_label
+                    )
+                    # Static(child_label)
                 )
+
+        # yield OptionList(
+        #     *[
+        #         Option(child_label)
+        #         for child_label in self.children_widgets
+        #         if self.search_query.lower() in child_label.lower()
+        #     ]
+        # )
 
 
 class SearchableChildrenWidget(Static):
@@ -154,7 +176,6 @@ class SearchableChildrenWidget(Static):
     def compose(self):
         with Vertical():
             yield Input(placeholder="Search Attributes")
-            yield Label()
             yield ChildrenWidget(
                 parent_object=self.obj, child_labels=self.get_child_labels()
             )
