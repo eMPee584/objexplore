@@ -125,28 +125,6 @@ class ChildWidget(Static):
             yield pretty
 
 
-from dataclasses import dataclass
-
-from rich.console import Console, ConsoleOptions, RenderResult
-from rich.pretty import Pretty as RichPretty
-from rich.table import Table
-
-
-@dataclass
-class Student:
-    label: str
-
-    def __rich_console__(
-        self, console: Console, options: ConsoleOptions
-    ) -> RenderResult:
-        yield f"[b]Label:[/b] #{self.label}"
-        my_table = Table("Attribute", "Value")
-        my_table.show_lines = False
-        my_table.add_row("label", self.label)
-        my_table.add_row("type", RichPretty(self.label))
-        yield my_table
-
-
 class ChildrenWidget(Static):
     search_query = reactive("", recompose=True)
 
@@ -236,7 +214,7 @@ class DirectoryWidget(Static):
     BINDINGS = [
         ("[", "toggle_public_private"),
         ("]", "toggle_public_private"),
-        ("/", "focus_search"),
+        ("/", "focus_search", "Search"),
     ]
 
     def __init__(self, obj, *args, **kwargs):
@@ -263,10 +241,17 @@ class DirectoryWidget(Static):
 
 
 class InspectedObjectWidget(Static):
-    highlighted_object = reactive(None, recompose=True)
+    selected_object = reactive(None, recompose=True)
 
     def compose(self):
-        yield Static(get_inspect(self.highlighted_object))
+
+        docstring = console.render_str(inspect.getdoc(self.selected_object) or "None")
+
+        with ScrollableContainer():
+            yield Pretty(type(self.selected_object))
+            with VerticalScroll():
+                yield Pretty(self.selected_object)
+            yield Label(docstring)
 
 
 class ObjectExplorer(App):
@@ -303,9 +288,7 @@ class ObjectExplorer(App):
         self.dark = not self.dark
 
     def on_option_list_option_highlighted(self, event):
-        # # pass
-        # self.highlighted_object = getattr(self.obj, event.option.id)
-        self.query_one(InspectedObjectWidget).highlighted_object = getattr(
+        self.query_one(InspectedObjectWidget).selected_object = getattr(
             self.obj, event.option.id
         )
 
