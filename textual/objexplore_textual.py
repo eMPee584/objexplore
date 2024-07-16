@@ -1,11 +1,17 @@
-from logging import PlaceHolder
 from typing import Any, Optional, Type
 
 import rich
 
 from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, ScrollableContainer, Vertical
+from textual.containers import (
+    Container,
+    Grid,
+    Horizontal,
+    ScrollableContainer,
+    Vertical,
+    VerticalScroll,
+)
 from textual.driver import Driver
 from textual.reactive import reactive
 from textual.widgets import (
@@ -15,6 +21,7 @@ from textual.widgets import (
     Input,
     Label,
     Placeholder,
+    Pretty,
     Static,
     TabbedContent,
     TabPane,
@@ -96,25 +103,28 @@ class ChildWidget(Static):
         self.child_label = child_label
         super().__init__(*args, **kwargs)
 
+    def on_mount(self):
+        # self.styles.border = ("solid", "green")
+        self.styles.layout = "horizontal"
+        self.styles.height = "auto"
+        # self.styles.width = "auto"
+
     def compose(self):
         actual_child_object = getattr(self.parent_object, self.child_label)
 
-        yield Label(str(self.child_label))
-
-
-class Name(Static):
-
-    who = reactive("world")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.who = "world"
-
-    def render(self):
-        return f"Hello, {self.who}!"
+        with Horizontal() as h:
+            h.styles.height = "auto"
+            yield Label(self.child_label)
+            yield Pretty(type(actual_child_object))
 
 
 class ChildrenWidget(Static):
+    # DEFAULT_CSS = """
+    # ChildWidget {
+    #     layout: horizontal;
+    #     # border: solid green
+    # }
+    # """
     search_query = reactive("", recompose=True)
 
     def __init__(self, parent_object, child_labels, *args, **kwargs):
@@ -123,14 +133,15 @@ class ChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        with ScrollableContainer():
+        with VerticalScroll():
             for child_label in [
                 child
                 for child in self.children_widgets
                 if self.search_query.lower() in child.lower()
             ]:
                 yield ChildWidget(
-                    parent_object=self.parent_object, child_label=child_label
+                    parent_object=self.parent_object,
+                    child_label=child_label,
                 )
 
 
@@ -183,16 +194,6 @@ class DirectoryWidget(Static):
                 yield PublicChildrenWidget(obj=self.obj)
             with TabPane("Private", id="private"):
                 yield PrivateChildrenWidget(obj=self.obj)
-
-    # @on(Input.Changed)
-    # def update_search_query(self, event: Input.Changed):
-    #     active_tab = self.query_one(TabbedContent).active
-
-    #     if active_tab == "public":
-    #         self.query_one(PublicChildrenWidget).search_query = event.value
-
-    #     elif active_tab == "private":
-    #         self.query_one(PrivateChildrenWidget).search_query = event.value
 
 
 class ObjectExplorer(App):
