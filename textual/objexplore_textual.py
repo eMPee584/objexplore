@@ -106,12 +106,6 @@ class InspectWidget(Static):
 
 
 class ChildWidget(Static):
-    DEFAULT_CSS = """
-    Grid {
-        grid-size: 2 1;
-    }
-    """
-
     def __init__(self, parent_object, child_label, *args, **kwargs):
         self.parent_object = parent_object
         self.child_label = child_label
@@ -119,15 +113,6 @@ class ChildWidget(Static):
 
     def on_mount(self):
         self.styles.height = "auto"
-
-    def _on_enter(self, event: Enter) -> None:
-        # self.original_background = self.styles.background
-        # self.styles.background = "red"
-        return super()._on_enter(event)
-
-    def _on_leave(self, event: Leave) -> None:
-        # self.styles.background = self.original_background
-        return super()._on_leave(event)
 
     def compose(self):
         actual_child_object = getattr(self.parent_object, self.child_label)
@@ -138,13 +123,6 @@ class ChildWidget(Static):
             label.styles.padding = (0, 1)
             pretty = Pretty(type(actual_child_object))
             yield pretty
-
-        # with Grid() as g:
-        #     g.styles.height = "auto"
-        #     yield Label(self.child_label)
-        #     yield Pretty(type(actual_child_object))
-        #     # yield Placeholder()
-        #     # yield Placeholder()
 
 
 from dataclasses import dataclass
@@ -178,23 +156,8 @@ class ChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-
-        # with ListView():
-        #     for child_label in [
-        #         child
-        #         for child in self.child_labels
-        #         if self.search_query.lower() in child.lower()
-        #     ]:
-        #         yield ListItem(
-        #             ChildWidget(
-        #                 parent_object=self.parent_object, child_label=child_label
-        #             )
-        #             # Static(child_label)
-        #         )
-
         yield OptionList(
             *[
-                # Option(f"[cyan]{child_label}[/]")
                 self.get_option_for_child(child_label)
                 for child_label in self.child_labels
                 if self.search_query.lower() in child_label.lower()
@@ -205,18 +168,18 @@ class ChildrenWidget(Static):
         child_object = getattr(self.parent_object, child_label)
 
         if child_object is None:
-            return Option(f"[strike][dim]{child_label}[/]")
+            return Option(f"[strike][dim]{child_label}[/]", id=child_label)
 
         if inspect.isclass(child_object):
-            return Option(f"[magenta]{child_label}[/]")
+            return Option(f"[magenta]{child_label}[/]", id=child_label)
 
         if callable(child_object):
-            return Option(f"[cyan][i]{child_label}[/cyan]()[/i]")
+            return Option(f"[cyan][i]{child_label}[/cyan]()[/i]", id=child_label)
 
         if isinstance(child_object, dict):
-            return Option("{**[cyan]" + child_label + "[/]}")
+            return Option("{**[cyan]" + child_label + "[/]}", id=child_label)
 
-        return Option(child_label)
+        return Option(child_label, id=child_label)
 
 
 class MyInput(Input):
@@ -299,6 +262,13 @@ class DirectoryWidget(Static):
         self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
 
+class InspectedObjectWidget(Static):
+    highlighted_object = reactive(None, recompose=True)
+
+    def compose(self):
+        yield Static(get_inspect(self.highlighted_object))
+
+
 class ObjectExplorer(App):
     """A Textual app to manage stopwatches."""
 
@@ -320,7 +290,7 @@ class ObjectExplorer(App):
                 yield DirectoryWidget(obj=self.obj)
 
             with Vertical(classes="column"):
-                yield Static("hello")
+                yield InspectedObjectWidget()
 
         yield Footer()
 
@@ -331,6 +301,13 @@ class ObjectExplorer(App):
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
         self.dark = not self.dark
+
+    def on_option_list_option_highlighted(self, event):
+        # # pass
+        # self.highlighted_object = getattr(self.obj, event.option.id)
+        self.query_one(InspectedObjectWidget).highlighted_object = getattr(
+            self.obj, event.option.id
+        )
 
 
 if __name__ == "__main__":
