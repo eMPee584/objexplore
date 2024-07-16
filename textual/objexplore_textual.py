@@ -121,19 +121,42 @@ class ChildWidget(Static):
     def compose(self):
         actual_child_object = getattr(self.parent_object, self.child_label)
 
-        # with Horizontal() as h:
-        #     h.styles.height = "auto"
-        #     yield Label(self.child_label)
-        #     pretty = Pretty(type(actual_child_object))
-        #     # pretty.styles.
-        #     yield pretty
-
-        with Grid() as g:
-            g.styles.height = "auto"
+        with Horizontal() as h:
+            h.styles.height = "auto"
+            h.styles.padding = (1, 1)
             yield Label(self.child_label)
-            yield Pretty(type(actual_child_object))
-            # yield Placeholder()
-            # yield Placeholder()
+            pretty = Pretty(type(actual_child_object))
+            # pretty.styles.
+            yield pretty
+
+        # with Grid() as g:
+        #     g.styles.height = "auto"
+        #     yield Label(self.child_label)
+        #     yield Pretty(type(actual_child_object))
+        #     # yield Placeholder()
+        #     # yield Placeholder()
+
+
+from dataclasses import dataclass
+
+from rich.console import Console, ConsoleOptions, RenderResult
+from rich.pretty import Pretty as RichPretty
+from rich.table import Table
+
+
+@dataclass
+class Student:
+    label: str
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        yield f"[b]Label:[/b] #{self.label}"
+        my_table = Table("Attribute", "Value")
+        my_table.show_lines = False
+        my_table.add_row("label", self.label)
+        my_table.add_row("type", RichPretty(self.label))
+        yield my_table
 
 
 class ChildrenWidget(Static):
@@ -145,6 +168,7 @@ class ChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
+
         with ListView():
             for child_label in [
                 child
@@ -160,7 +184,7 @@ class ChildrenWidget(Static):
 
         # yield OptionList(
         #     *[
-        #         Option(child_label)
+        #         Static(child_label)
         #         for child_label in self.children_widgets
         #         if self.search_query.lower() in child_label.lower()
         #     ]
