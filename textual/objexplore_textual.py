@@ -1,5 +1,4 @@
 import inspect
-from tkinter import Place
 from typing import Any, Optional, Type
 
 import rich
@@ -102,7 +101,7 @@ class InspectWidget(Static):
         super().__init__(get_inspect(obj), **kwargs)
 
     def compose(self):
-        yield Static(get_inspect(self.obj))
+        yield Static(get_inspect(self.obj, all=True))
 
 
 class ChildWidget(Static):
@@ -161,12 +160,7 @@ class ChildrenWidget(Static):
 
 
 class MyInput(Input):
-    BINDINGS = [
-        (
-            "escape",
-            "leave_focus",
-        )
-    ]
+    BINDINGS = [("escape", "leave_focus")]
 
     def action_leave_focus(self):
         self.blur()
@@ -210,13 +204,6 @@ class PrivateChildrenWidget(SearchableChildrenWidget):
 
 
 class DirectoryWidget(Static):
-
-    BINDINGS = [
-        ("[", "toggle_public_private"),
-        ("]", "toggle_public_private"),
-        ("/", "focus_search", "Search"),
-    ]
-
     def __init__(self, obj, *args, **kwargs):
         self.obj = obj
         super().__init__(*args, **kwargs)
@@ -225,33 +212,72 @@ class DirectoryWidget(Static):
         with TabbedContent():
             with TabPane("Public", id="public"):
                 yield PublicChildrenWidget(obj=self.obj)
+
             with TabPane("Private", id="private"):
                 yield PrivateChildrenWidget(obj=self.obj)
 
-    def action_toggle_public_private(self):
-        tabbed_content = self.query_one(TabbedContent)
-
-        if tabbed_content.active == "public":
-            tabbed_content.active = "private"
-        else:
-            tabbed_content.active = "public"
-
-    def action_focus_search(self):
-        self.query_one(TabbedContent).active_pane.query_one(Input).focus()
-
 
 class InspectedObjectWidget(Static):
+    selected_object_label = reactive("")
     selected_object = reactive(None, recompose=True)
 
     def compose(self):
+        with TabbedContent():
 
-        docstring = console.render_str(inspect.getdoc(self.selected_object) or "None")
+            with TabPane("Main"):
+                yield Label(self.selected_object_label)
+                yield Pretty(type(self.selected_object))
+                with VerticalScroll():
+                    with VerticalScroll() as v:
+                        # v.styles.height = "10"
+                        v.styles.height = "50%"
+                        v.styles.border = ("round", "cyan")
+                        yield Label(
+                            console.render_str(
+                                inspect.getdoc(self.selected_object) or "None"
+                            )
+                        )
 
-        with ScrollableContainer():
-            yield Pretty(type(self.selected_object))
-            with VerticalScroll():
-                yield Pretty(self.selected_object)
-            yield Label(docstring)
+                    yield Pretty(self.selected_object)
+
+            if callable(self.selected_object):
+                with TabPane("Source"):
+                    try:
+                        source = inspect.getsource(self.selected_object)
+                        text_area = TextArea(source, language="python")
+                        text_area.read_only = True
+                        text_area.show_line_numbers = True
+                        yield text_area
+                    except OSError:
+                        yield Label("Source not available")
+
+            # with TabPane("Main"):
+
+            #     if callable(self.selected_object):
+            #         source = inspect.getsource(self.selected_object)
+            #         text_area = TextArea(source, language="python")
+            #         text_area.read_only = True
+            #         text_area.show_line_numbers = True
+            #         yield text_area
+
+            #     else:
+
+            #         docstring = console.render_str(
+            #             inspect.getdoc(self.selected_object) or "None"
+            #         )
+
+            #         with ScrollableContainer():
+            #             _type = Pretty(type(self.selected_object))
+            #             _type.styles.border = ("round", "cyan")
+            #             _type.border_title = "Type"
+            #             yield _type
+            #             with VerticalScroll():
+            #                 yield Pretty(self.selected_object)
+            #             yield Label(docstring)
+
+            with TabPane("Inspect"):
+                with VerticalScroll():
+                    yield InspectWidget(self.selected_object)
 
 
 class ObjectExplorer(App):
@@ -260,7 +286,19 @@ class ObjectExplorer(App):
     BINDINGS = [
         ("q", "request_quit", "Quit"),
         ("d", "toggle_dark", "Toggle dark mode"),
+        ("[", "toggle_public_private"),
+        ("]", "toggle_public_private"),
+        ("/", "focus_search", "Search"),
     ]
+
+    CSS = """
+    Screen {
+        &:inline {
+            border: none;
+            height: 50vh;
+        }
+    }
+    """
 
     def __init__(self, *args, obj, **kwargs):
         self.obj = obj
@@ -271,7 +309,8 @@ class ObjectExplorer(App):
         yield Header(show_clock=True)
 
         with Horizontal():
-            with Vertical(classes="column"):
+            with Vertical(classes="column") as v:
+                v.styles.width = "30%"
                 yield DirectoryWidget(obj=self.obj)
 
             with Vertical(classes="column"):
@@ -288,11 +327,26 @@ class ObjectExplorer(App):
         self.dark = not self.dark
 
     def on_option_list_option_highlighted(self, event):
-        self.query_one(InspectedObjectWidget).selected_object = getattr(
-            self.obj, event.option.id
-        )
+        inspector = self.query_one(InspectedObjectWidget)
+        inspector.selected_object_label = event.option.id
+        inspector.selected_object = getattr(self.obj, event.option.id)
+
+    def action_toggle_public_private(self):
+        tabbed_content = self.query_one(TabbedContent)
+
+        if tabbed_content.active == "public":
+            tabbed_content.active = "private"
+        else:
+            tabbed_content.active = "public"
+
+    def action_focus_search(self):
+        self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
 
 if __name__ == "__main__":
-    app = ObjectExplorer(obj=console)
+    import pandas
+
+    app = ObjectExplorer(obj=pandas)
+    # app = ObjectExplorer(obj=console)
+    # app.run(inline=True)
     app.run()
