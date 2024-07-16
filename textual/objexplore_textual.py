@@ -315,10 +315,14 @@ class ObjectExplorer(App):
         """Create child widgets for the app."""
         yield Header(show_clock=True)
 
-        with Vertical(classes="column"):
-            yield DirectoryWidget(obj=self.obj)
+        with Horizontal():
+            with Vertical(classes="column"):
+                yield DirectoryWidget(obj=self.obj)
 
-        # yield Footer()
+            with Vertical(classes="column"):
+                yield Static("hello")
+
+        yield Footer()
 
     def action_request_quit(self) -> None:
         """Action to display the quit dialog."""
@@ -327,17 +331,6 @@ class ObjectExplorer(App):
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
         self.dark = not self.dark
-
-    # def on_tree_node_selected(self, node):
-    #     if node.node.is_root:
-    #         return
-
-    #     try:
-    #         self.obj = getattr(self.obj, str(node.node.label))
-    #     except:
-    #         with self.suspend():
-    #             breakpoint()
-    #             print("hello")
 
 
 if __name__ == "__main__":
