@@ -2,6 +2,8 @@ import inspect
 from typing import Any, Optional, Type
 
 import rich
+from rich.table import Table
+from rich.text import Text
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -218,6 +220,12 @@ class DirectoryWidget(Static):
 
 
 class InspectedObjectWidget(Static):
+    DEFAULT_CSS = """
+    #pretty {
+        background: $primary-background-darken-1;
+        border: wide black;
+    }
+    """
     selected_object_label = reactive("")
     selected_object = reactive(None, recompose=True)
 
@@ -229,16 +237,26 @@ class InspectedObjectWidget(Static):
                 yield Pretty(type(self.selected_object))
                 with VerticalScroll():
                     with VerticalScroll() as v:
-                        # v.styles.height = "10"
-                        v.styles.height = "50%"
-                        v.styles.border = ("round", "cyan")
-                        yield Label(
-                            console.render_str(
-                                inspect.getdoc(self.selected_object) or "None"
-                            )
+                        v.styles.height = "auto"
+                        v.styles.max_height = "50%"
+                        yield TextArea(
+                            inspect.getdoc(self.selected_object) or "None",
+                            read_only=True,
                         )
 
-                    yield Pretty(self.selected_object)
+                    with VerticalScroll(id="pretty") as v:
+                        v.styles.max_height = "50%"
+                        yield Pretty(self.selected_object)
+
+                    with Horizontal():
+                        with Vertical(classes="column"):
+                            yield Static("hello")
+
+                        with Vertical(classes="column"):
+                            yield Static("world")
+
+                        with Vertical(classes="column"):
+                            yield Static("lorem")
 
             if callable(self.selected_object):
                 with TabPane("Source"):
