@@ -18,11 +18,9 @@ from textual.containers import (
 from textual.driver import Driver
 from textual.events import Enter, Leave
 from textual.reactive import reactive
+from textual.widgets import Button, Footer, Header
+from textual.widgets import Input as TextualInput
 from textual.widgets import (
-    Button,
-    Footer,
-    Header,
-    Input,
     Label,
     ListItem,
     ListView,
@@ -97,6 +95,13 @@ def get_inspect(
     return _inspect
 
 
+class Input(TextualInput):
+    BINDINGS = [("escape", "leave_focus")]
+
+    def action_leave_focus(self):
+        self.blur()
+
+
 class InspectWidget(Static):
     def __init__(self, obj, **kwargs):
         self.obj = obj
@@ -140,7 +145,8 @@ class ChildrenWidget(Static):
                 self.get_option_for_child(child_label)
                 for child_label in self.child_labels
                 if self.search_query.lower() in child_label.lower()
-            ]
+            ],
+            wrap=False,
         )
 
     def get_option_for_child(self, child_label):
@@ -149,23 +155,40 @@ class ChildrenWidget(Static):
         if child_object is None:
             return Option(f"[strike][dim]{child_label}[/]", id=child_label)
 
-        if inspect.isclass(child_object):
+        elif inspect.isclass(child_object):
             return Option(f"[magenta]{child_label}[/]", id=child_label)
 
-        if callable(child_object):
-            return Option(f"[cyan][i]{child_label}[/cyan]()[/i]", id=child_label)
+        elif inspect.ismodule(child_object):
+            return Option(f"[blue]{child_label}[/]", id=child_label)
 
-        if isinstance(child_object, dict):
+        elif inspect.ismethod(child_object) or inspect.isfunction(child_object):
+            return Option(f"[cyan]{child_label}[/cyan]()", id=child_label)
+
+        elif isinstance(child_object, dict):
             return Option("{**[cyan]" + child_label + "[/]}", id=child_label)
 
+        elif isinstance(child_object, bool):
+            color = "green" if child_object else "red"
+            return Option(
+                f"{child_label} = [{color}][i]{child_object}[/i][/{color}]",
+                id=child_label,
+            )
+
+        elif isinstance(child_object, str):
+            return Option(
+                f'{child_label} = [green][i]"{child_object}[/i][/green]"',
+                id=child_label,
+            )
+
+        elif isinstance(child_object, list):
+            return Option("list")
+
+        # else:
+        #     with self.app.suspend():
+        #         breakpoint()
+        #         pass
+
         return Option(child_label, id=child_label)
-
-
-class MyInput(Input):
-    BINDINGS = [("escape", "leave_focus")]
-
-    def action_leave_focus(self):
-        self.blur()
 
 
 class SearchableChildrenWidget(Static):
@@ -175,7 +198,7 @@ class SearchableChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield MyInput(placeholder="Search Attributes")
+        yield Input(placeholder="Search Attributes")
         with VerticalScroll():
             yield ChildrenWidget(
                 parent_object=self.obj, child_labels=self.get_child_labels()
@@ -235,14 +258,15 @@ class InspectedObjectWidget(Static):
             with TabPane("Main"):
                 yield Label(self.selected_object_label)
                 yield Pretty(type(self.selected_object))
+
                 with VerticalScroll():
                     with VerticalScroll() as v:
                         v.styles.height = "auto"
                         v.styles.max_height = "50%"
-                        yield TextArea(
-                            inspect.getdoc(self.selected_object) or "None",
-                            read_only=True,
-                        )
+                        # yield TextArea(
+                        #     inspect.getdoc(self.selected_object) or "None",
+                        #     read_only=True,
+                        # )
 
                     with VerticalScroll(id="pretty") as v:
                         v.styles.max_height = "50%"
@@ -258,44 +282,20 @@ class InspectedObjectWidget(Static):
                         with Vertical(classes="column"):
                             yield Static("lorem")
 
-            if callable(self.selected_object):
-                with TabPane("Source"):
-                    try:
-                        source = inspect.getsource(self.selected_object)
-                        text_area = TextArea(source, language="python")
-                        text_area.read_only = True
-                        text_area.show_line_numbers = True
-                        yield text_area
-                    except OSError:
-                        yield Label("Source not available")
+            # if callable(self.selected_object):
+            #     with TabPane("Source"):
+            #         try:
+            #             source = inspect.getsource(self.selected_object)
+            #             text_area = TextArea(source, language="python")
+            #             text_area.read_only = True
+            #             text_area.show_line_numbers = True
+            #             yield text_area
+            #         except Exception:
+            #             yield Label("Source not available")
 
-            # with TabPane("Main"):
-
-            #     if callable(self.selected_object):
-            #         source = inspect.getsource(self.selected_object)
-            #         text_area = TextArea(source, language="python")
-            #         text_area.read_only = True
-            #         text_area.show_line_numbers = True
-            #         yield text_area
-
-            #     else:
-
-            #         docstring = console.render_str(
-            #             inspect.getdoc(self.selected_object) or "None"
-            #         )
-
-            #         with ScrollableContainer():
-            #             _type = Pretty(type(self.selected_object))
-            #             _type.styles.border = ("round", "cyan")
-            #             _type.border_title = "Type"
-            #             yield _type
-            #             with VerticalScroll():
-            #                 yield Pretty(self.selected_object)
-            #             yield Label(docstring)
-
-            with TabPane("Inspect"):
-                with VerticalScroll():
-                    yield InspectWidget(self.selected_object)
+            # with TabPane("Inspect"):
+            #     with VerticalScroll():
+            #         yield InspectWidget(self.selected_object)
 
 
 class ObjectExplorer(App):
@@ -308,15 +308,6 @@ class ObjectExplorer(App):
         ("]", "toggle_public_private"),
         ("/", "focus_search", "Search"),
     ]
-
-    CSS = """
-    Screen {
-        &:inline {
-            border: none;
-            height: 50vh;
-        }
-    }
-    """
 
     def __init__(self, *args, obj, **kwargs):
         self.obj = obj
@@ -364,7 +355,8 @@ class ObjectExplorer(App):
 if __name__ == "__main__":
     import pandas
 
-    app = ObjectExplorer(obj=pandas)
+    # app = ObjectExplorer(obj=pandas)
+    app = ObjectExplorer(obj=rich)
     # app = ObjectExplorer(obj=console)
     # app.run(inline=True)
     app.run()
