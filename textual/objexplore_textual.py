@@ -132,14 +132,17 @@ class ChildWidget(Static):
             h.styles.height = "auto"
             with Vertical() as v:
                 v.styles.height = "auto"
-                v.styles.width = "30%"
+                v.styles.width = "25%"
+                v.styles.align = ("right", "middle")
+                v.styles.text_style = Style(bold=True, italic=True)
                 label = Label(self.child_label)
-                label.styles.padding = (0, 1)
+                label.styles.margin = 1
                 yield label
 
             with Vertical() as v:
-                v.styles.height = "auto"
-                pretty = Pretty(type(actual_child_object))
+                v.styles.height = "3"
+                v.styles.border = ("round", "green")
+                pretty = Pretty(actual_child_object)
                 yield pretty
 
 
