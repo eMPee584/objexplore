@@ -117,6 +117,12 @@ class InspectWidget(Static):
 
 
 class ChildWidget(Static):
+    DEFAULT_CSS = """
+    ChildWidget > * > *:hover {
+        background: $primary-background-darken-1;
+    }
+    """
+
     def __init__(self, parent_object, child_label, *args, **kwargs):
         self.parent_object = parent_object
         self.child_label = child_label
