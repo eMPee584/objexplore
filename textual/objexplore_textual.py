@@ -283,7 +283,12 @@ class PreviewWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield Pretty(self.selected_object)
+        yield InspectWidget(self.selected_object)
+
+        # if inspect.ismodule(self.selected_object):
+        #     yield InspectWidget(self.selected_object)
+        # else:
+        #     yield Pretty(self.selected_object)
 
 
 class InspectedObjectWidget(Static):
@@ -318,7 +323,7 @@ class InspectedObjectWidget(Static):
 
         with VerticalScroll():
             yield PreviewWidget(selected_object=self.selected_object)
-            yield DocstringWidget(selected_object=self.selected_object)
+            # yield DocstringWidget(selected_object=self.selected_object)
 
 
 class ObjectExplorer(App):
@@ -330,6 +335,8 @@ class ObjectExplorer(App):
         ("[", "toggle_public_private"),
         ("]", "toggle_public_private"),
         ("/", "focus_search", "Search"),
+        ("j", "cursor_down"),
+        ("k", "cursor_up"),
     ]
 
     def __init__(self, *args, obj, **kwargs):
@@ -373,6 +380,17 @@ class ObjectExplorer(App):
 
     def action_focus_search(self):
         self.query_one(TabbedContent).active_pane.query_one(Input).focus()
+
+    def action_cursor_down(self) -> None:
+        # return self.query_one(ChildrenWidget).action_cursor_down()
+        self.query_one(TabbedContent).active_pane.query_one(
+            OptionList
+        ).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        self.query_one(TabbedContent).active_pane.query_one(
+            OptionList
+        ).action_cursor_down()
 
 
 if __name__ == "__main__":
