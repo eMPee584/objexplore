@@ -2,10 +2,7 @@ import inspect
 from typing import Any, Optional, Type
 
 import rich
-from rich.pretty import pretty_repr
 from rich.style import Style
-from rich.table import Table
-from rich.text import Text
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -190,7 +187,7 @@ class ChildrenWidget(Static):
 
         elif isinstance(child_object, str):
             return Option(
-                f'{child_label} = [green][i]"{child_object}[/i][/green]"',
+                f"{child_label} = [green][i]'{child_object}'[/i][/green]",
                 id=child_label,
             )
 
@@ -300,48 +297,28 @@ class InspectedObjectWidget(Static):
     selected_object = reactive(None, recompose=True)
 
     def compose(self):
-        label = Label(self.selected_object_label)
-        yield label
+        with Horizontal() as h:
+            h.styles.height = "3"
+            with Vertical():
+                label = Label(self.selected_object_label)
+                label.styles.border = ("round", "cyan")
+                label.border_title = "Name"
+                label.styles.border_title_color = "white"
+                label.styles.border_title_style = Style(italic=True)
+                label.styles.width = "100%"
+                yield label
+
+            with Vertical():
+                _type = Pretty(type(self.selected_object))
+                _type.styles.border = ("round", "cyan")
+                _type.border_title = "Type"
+                _type.styles.border_title_color = "white"
+                _type.styles.border_title_style = Style(italic=True)
+                yield _type
 
         with VerticalScroll():
             yield PreviewWidget(selected_object=self.selected_object)
             yield DocstringWidget(selected_object=self.selected_object)
-            # with VerticalScroll() as v:
-            #     v.styles.height = "auto"
-            #     v.styles.max_height = "50%"
-            #     yield TextArea(
-            #         inspect.getdoc(self.selected_object) or "None",
-            #         read_only=True,
-            #     )
-
-            # with VerticalScroll(id="pretty") as v:
-            #     v.styles.max_height = "50%"
-            #     yield Pretty(self.selected_object)
-
-        #     with Horizontal():
-        #         with Vertical(classes="column"):
-        #             yield Static("hello")
-
-        #         with Vertical(classes="column"):
-        #             yield Static("world")
-
-        #         with Vertical(classes="column"):
-        #             yield Static("lorem")
-
-        # if callable(self.selected_object):
-        #     with TabPane("Source"):
-        #         try:
-        #             source = inspect.getsource(self.selected_object)
-        #             text_area = TextArea(source, language="python")
-        #             text_area.read_only = True
-        #             text_area.show_line_numbers = True
-        #             yield text_area
-        #         except Exception:
-        #             yield Label("Source not available")
-
-        # with TabPane("Inspect"):
-        #     with VerticalScroll():
-        #         yield InspectWidget(self.selected_object)
 
 
 class ObjectExplorer(App):
