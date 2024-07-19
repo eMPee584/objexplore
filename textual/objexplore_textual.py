@@ -2,6 +2,8 @@ import inspect
 from typing import Any, Optional, Type
 
 import rich
+from rich.pretty import pretty_repr
+from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
@@ -132,6 +134,12 @@ class ChildWidget(Static):
 
 
 class ChildrenWidget(Static):
+
+    BINDINGS = [
+        ("j", "cursor_down"),
+        ("k", "cursor_up"),
+    ]
+
     search_query = reactive("", recompose=True)
 
     def __init__(self, parent_object, child_labels, *args, **kwargs):
@@ -148,6 +156,12 @@ class ChildrenWidget(Static):
             ],
             wrap=False,
         )
+
+    def action_cursor_down(self) -> None:
+        return self.query_one(OptionList).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        return self.query_one(OptionList).action_cursor_up()
 
     def get_option_for_child(self, child_label):
         child_object = getattr(self.parent_object, child_label)
@@ -181,7 +195,10 @@ class ChildrenWidget(Static):
             )
 
         elif isinstance(child_object, list):
-            return Option("list")
+            return Option(
+                "[*" + f"[red]{child_label}[/red]" + "]",
+                id=child_label,
+            )
 
         # else:
         #     with self.app.suspend():
@@ -242,6 +259,36 @@ class DirectoryWidget(Static):
                 yield PrivateChildrenWidget(obj=self.obj)
 
 
+class DocstringWidget(Static):
+    DEFAULT_CSS = """
+    DocstringWidget:hover {
+        background: $primary-background-darken-1;
+    }
+    """
+
+    def __init__(self, selected_object, *args, **kwargs):
+        self.selected_object = selected_object
+        super().__init__(*args, **kwargs)
+
+    def on_mount(self):
+        self.styles.border = ("round", "green")
+        self.border_title = "docstring"
+        self.styles.border_title_style = Style(italic=True, color="white")
+
+    def render(self):
+        docstring = inspect.getdoc(self.selected_object) or "None"
+        return docstring
+
+
+class PreviewWidget(Static):
+    def __init__(self, selected_object, *args, **kwargs):
+        self.selected_object = selected_object
+        super().__init__(*args, **kwargs)
+
+    def compose(self):
+        yield Pretty(self.selected_object)
+
+
 class InspectedObjectWidget(Static):
     DEFAULT_CSS = """
     #pretty {
@@ -253,49 +300,48 @@ class InspectedObjectWidget(Static):
     selected_object = reactive(None, recompose=True)
 
     def compose(self):
-        with TabbedContent():
+        label = Label(self.selected_object_label)
+        yield label
 
-            with TabPane("Main"):
-                yield Label(self.selected_object_label)
-                yield Pretty(type(self.selected_object))
+        with VerticalScroll():
+            yield PreviewWidget(selected_object=self.selected_object)
+            yield DocstringWidget(selected_object=self.selected_object)
+            # with VerticalScroll() as v:
+            #     v.styles.height = "auto"
+            #     v.styles.max_height = "50%"
+            #     yield TextArea(
+            #         inspect.getdoc(self.selected_object) or "None",
+            #         read_only=True,
+            #     )
 
-                with VerticalScroll():
-                    with VerticalScroll() as v:
-                        v.styles.height = "auto"
-                        v.styles.max_height = "50%"
-                        # yield TextArea(
-                        #     inspect.getdoc(self.selected_object) or "None",
-                        #     read_only=True,
-                        # )
+            # with VerticalScroll(id="pretty") as v:
+            #     v.styles.max_height = "50%"
+            #     yield Pretty(self.selected_object)
 
-                    with VerticalScroll(id="pretty") as v:
-                        v.styles.max_height = "50%"
-                        yield Pretty(self.selected_object)
+        #     with Horizontal():
+        #         with Vertical(classes="column"):
+        #             yield Static("hello")
 
-                    with Horizontal():
-                        with Vertical(classes="column"):
-                            yield Static("hello")
+        #         with Vertical(classes="column"):
+        #             yield Static("world")
 
-                        with Vertical(classes="column"):
-                            yield Static("world")
+        #         with Vertical(classes="column"):
+        #             yield Static("lorem")
 
-                        with Vertical(classes="column"):
-                            yield Static("lorem")
+        # if callable(self.selected_object):
+        #     with TabPane("Source"):
+        #         try:
+        #             source = inspect.getsource(self.selected_object)
+        #             text_area = TextArea(source, language="python")
+        #             text_area.read_only = True
+        #             text_area.show_line_numbers = True
+        #             yield text_area
+        #         except Exception:
+        #             yield Label("Source not available")
 
-            # if callable(self.selected_object):
-            #     with TabPane("Source"):
-            #         try:
-            #             source = inspect.getsource(self.selected_object)
-            #             text_area = TextArea(source, language="python")
-            #             text_area.read_only = True
-            #             text_area.show_line_numbers = True
-            #             yield text_area
-            #         except Exception:
-            #             yield Label("Source not available")
-
-            # with TabPane("Inspect"):
-            #     with VerticalScroll():
-            #         yield InspectWidget(self.selected_object)
+        # with TabPane("Inspect"):
+        #     with VerticalScroll():
+        #         yield InspectWidget(self.selected_object)
 
 
 class ObjectExplorer(App):
