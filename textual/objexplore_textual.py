@@ -28,6 +28,7 @@ from textual.widgets import (
     Pretty,
     Rule,
     Static,
+    Switch,
     TabbedContent,
     TabPane,
     TextArea,
@@ -106,8 +107,13 @@ class InspectWidget(Static):
         self.obj = obj
         super().__init__(get_inspect(obj), **kwargs)
 
-    def compose(self):
-        yield Static(get_inspect(self.obj, all=True))
+    # def compose(self):
+
+    # with self.app.suspend():
+    #     breakpoint()
+    #     pass
+
+    # yield Static(get_inspect(self.obj, all=True))
 
 
 class ChildWidget(Static):
@@ -124,13 +130,25 @@ class ChildWidget(Static):
 
         with Horizontal() as h:
             h.styles.height = "auto"
-            label = Label(self.child_label)
-            label.styles.padding = (0, 1)
-            pretty = Pretty(type(actual_child_object))
-            yield pretty
+            with Vertical() as v:
+                v.styles.height = "auto"
+                v.styles.width = "30%"
+                label = Label(self.child_label)
+                label.styles.padding = (0, 1)
+                yield label
+
+            with Vertical() as v:
+                v.styles.height = "auto"
+                pretty = Pretty(type(actual_child_object))
+                yield pretty
 
 
 class ChildrenWidget(Static):
+    DEFAULT_CSS = """
+    ChildrenWidget > OptionList:focus > .option-list--option-highlighted {
+        text-style: reverse
+    }
+    """
 
     BINDINGS = [
         ("j", "cursor_down"),
@@ -283,7 +301,29 @@ class PreviewWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield InspectWidget(self.selected_object)
+        if isinstance(self.selected_object, bool):
+            with Horizontal():
+                with Vertical():
+                    p = Pretty(self.selected_object)
+                    p.styles.border = ("round", "cyan")
+                    p.border_title = "Value"
+                    p.styles.border_title_color = "white"
+                    p.styles.border_title_style = Style(italic=True)
+                    yield p
+                with Vertical():
+                    yield Switch(self.selected_object)
+
+        elif inspect.isclass(self.selected_object) or inspect.ismodule(
+            self.selected_object
+        ):
+            yield Input(placeholder="Search Attributes")
+
+            for child_label in dir(self.selected_object):
+                yield ChildWidget(
+                    parent_object=self.selected_object, child_label=child_label
+                )
+
+        # yield InspectWidget(self.selected_object)
 
         # if inspect.ismodule(self.selected_object):
         #     yield InspectWidget(self.selected_object)
@@ -323,7 +363,6 @@ class InspectedObjectWidget(Static):
 
         with VerticalScroll():
             yield PreviewWidget(selected_object=self.selected_object)
-            # yield DocstringWidget(selected_object=self.selected_object)
 
 
 class ObjectExplorer(App):
@@ -382,7 +421,6 @@ class ObjectExplorer(App):
         self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
     def action_cursor_down(self) -> None:
-        # return self.query_one(ChildrenWidget).action_cursor_down()
         self.query_one(TabbedContent).active_pane.query_one(
             OptionList
         ).action_cursor_down()
