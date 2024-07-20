@@ -1,19 +1,13 @@
 import inspect
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 import rich
+from rich.console import Console
 from rich.style import Style
 
-from textual import on
+import textual
 from textual.app import App, ComposeResult
-from textual.containers import (
-    Container,
-    Grid,
-    Horizontal,
-    ScrollableContainer,
-    Vertical,
-    VerticalScroll,
-)
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.driver import Driver
 from textual.events import Enter, Leave
 from textual.reactive import reactive
@@ -21,18 +15,12 @@ from textual.widgets import Button, Footer, Header
 from textual.widgets import Input as TextualInput
 from textual.widgets import (
     Label,
-    ListItem,
-    ListView,
     OptionList,
-    Placeholder,
     Pretty,
-    Rule,
     Static,
     Switch,
     TabbedContent,
     TabPane,
-    TextArea,
-    Tree,
 )
 from textual.widgets.option_list import Option, Separator
 
@@ -42,7 +30,6 @@ console = rich.get_console()
 def get_inspect(
     obj: Any,
     *,
-    console: Optional["Console"] = None,
     title: Optional[str] = None,
     help: bool = False,
     methods: bool = False,
@@ -74,7 +61,6 @@ def get_inspect(
         all (bool, optional): Show all attributes. Defaults to False.
         value (bool, optional): Pretty print value. Defaults to True.
     """
-    _console = console or rich.get_console()
     from rich._inspect import Inspect
 
     # Special case for inspect(inspect)
@@ -106,14 +92,6 @@ class InspectWidget(Static):
     def __init__(self, obj, **kwargs):
         self.obj = obj
         super().__init__(get_inspect(obj), **kwargs)
-
-    # def compose(self):
-
-    # with self.app.suspend():
-    #     breakpoint()
-    #     pass
-
-    # yield Static(get_inspect(self.obj, all=True))
 
 
 class ChildWidget(Static):
@@ -148,8 +126,9 @@ class ChildWidget(Static):
             with Vertical() as v:
                 v.styles.height = "3"
                 v.styles.border = ("round", "green")
-                pretty = Pretty(actual_child_object)
-                yield pretty
+                yield Static("hello")
+                # pretty = Pretty(actual_child_object)
+                # yield pretty
 
 
 class ChildrenWidget(Static):
@@ -224,11 +203,6 @@ class ChildrenWidget(Static):
                 id=child_label,
             )
 
-        # else:
-        #     with self.app.suspend():
-        #         breakpoint()
-        #         pass
-
         return Option(child_label, id=child_label)
 
 
@@ -245,7 +219,7 @@ class SearchableChildrenWidget(Static):
                 parent_object=self.obj, child_labels=self.get_child_labels()
             )
 
-    @on(Input.Changed)
+    @textual.on(Input.Changed)
     def update_search_query(self, event: Input.Changed):
         self.query_one(ChildrenWidget).search_query = event.value
 
@@ -331,13 +305,6 @@ class PreviewWidget(Static):
                 yield ChildWidget(
                     parent_object=self.selected_object, child_label=child_label
                 )
-
-        # yield InspectWidget(self.selected_object)
-
-        # if inspect.ismodule(self.selected_object):
-        #     yield InspectWidget(self.selected_object)
-        # else:
-        #     yield Pretty(self.selected_object)
 
 
 class InspectedObjectWidget(Static):
