@@ -145,20 +145,21 @@ class ChildrenWidget(Static):
 
     search_query = reactive("", recompose=True)
 
-    def __init__(self, parent_object, child_labels, *args, **kwargs):
-        self.parent_object = parent_object
-        self.child_labels = child_labels
+    def __init__(self, parent_cached_object, *args, **kwargs):
+        self.parent_cached_object = parent_cached_object
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield OptionList(
-            *[
-                self.get_option_for_child(child_label)
-                for child_label in self.child_labels
-                if self.search_query.lower() in child_label.lower()
-            ],
-            wrap=False,
-        )
+        yield OptionList(*self.parent_cached_object.public_children_options)
+
+        # yield OptionList(
+        #     *[
+        #         self.get_option_for_child(child_label)
+        #         for child_label in self.child_labels
+        #         if self.search_query.lower() in child_label.lower()
+        #     ],
+        #     wrap=False,
+        # )
 
     def action_cursor_down(self) -> None:
         return self.query_one(OptionList).action_cursor_down()
@@ -167,7 +168,7 @@ class ChildrenWidget(Static):
         return self.query_one(OptionList).action_cursor_up()
 
     def get_option_for_child(self, child_label):
-        child_object = getattr(self.parent_object, child_label)
+        child_object = getattr(self.parent_cached_object, child_label)
 
         if child_object is None:
             return Option(f"[strike][dim]{child_label}[/]", id=child_label)
@@ -208,15 +209,16 @@ class ChildrenWidget(Static):
 
 class SearchableChildrenWidget(Static):
 
-    def __init__(self, obj, *args, **kwargs):
-        self.obj = obj
+    def __init__(self, cached_object, *args, **kwargs):
+        self.cached_object = cached_object
         super().__init__(*args, **kwargs)
 
     def compose(self):
         yield Input(placeholder="Search Attributes")
         with VerticalScroll():
             yield ChildrenWidget(
-                parent_object=self.obj, child_labels=self.get_child_labels()
+                parent_cached_object=self.cached_object,
+                # child_labels=self.get_child_labels(),
             )
 
     @textual.on(Input.Changed)
@@ -229,32 +231,34 @@ class SearchableChildrenWidget(Static):
 
 class PublicChildrenWidget(SearchableChildrenWidget):
     def get_child_labels(self):
-        return [
-            child_label
-            for child_label in dir(self.obj)
-            if not child_label.startswith("_")
-        ]
+        return self.cached_object.public_children_labels
+        # return [
+        #     child_label
+        #     for child_label in dir(self.cached_object)
+        #     if not child_label.startswith("_")
+        # ]
 
 
 class PrivateChildrenWidget(SearchableChildrenWidget):
     def get_child_labels(self):
-        return [
-            child_label for child_label in dir(self.obj) if child_label.startswith("_")
-        ]
+        return self.cached_object.private_children_labels
+        # return [
+        #     child_label for child_label in dir(self.cached_object) if child_label.startswith("_")
+        # ]
 
 
 class DirectoryWidget(Static):
-    def __init__(self, obj, *args, **kwargs):
-        self.obj = obj
+    def __init__(self, cached_object: "CachedObject", *args, **kwargs):
+        self.cached_object = cached_object
         super().__init__(*args, **kwargs)
 
     def compose(self):
         with TabbedContent():
             with TabPane("Public", id="public"):
-                yield PublicChildrenWidget(obj=self.obj)
+                yield PublicChildrenWidget(cached_object=self.cached_object)
 
             with TabPane("Private", id="private"):
-                yield PrivateChildrenWidget(obj=self.obj)
+                yield PrivateChildrenWidget(cached_object=self.cached_object)
 
 
 class DocstringWidget(Static):
@@ -341,6 +345,36 @@ class InspectedObjectWidget(Static):
             yield PreviewWidget(selected_object=self.selected_object)
 
 
+class CachedObject:
+    def __init__(self, obj):
+        self.obj = obj
+
+        self.public_children_labels = [
+            label for label in dir(obj) if not label.startswith("_")
+        ]
+        self.public_children = {
+            label: getattr(self.obj, label) for label in self.public_children_labels
+        }
+
+        self.private_children_labels = [
+            label for label in dir(obj) if label.startswith("_")
+        ]
+        self.private_children = {
+            label: getattr(self.obj, label) for label in self.private_children_labels
+        }
+
+        self.public_children_cached_objects = []
+        self.private_children_cached_objects = []
+
+    def cache_children(self):
+        self.public_children_cached_objects = [
+            CachedObject(child) for child in self.public_children.values()
+        ]
+        self.private_children_cached_objects = [
+            CachedObject(child) for child in self.private_children.values()
+        ]
+
+
 class ObjectExplorer(App):
     """A Textual app to manage stopwatches."""
 
@@ -356,6 +390,8 @@ class ObjectExplorer(App):
 
     def __init__(self, *args, obj, **kwargs):
         self.obj = obj
+        self.cached_object = CachedObject(obj)
+        self.cached_object.cache_children()
         super().__init__(*args, **kwargs)
 
     def compose(self) -> ComposeResult:
@@ -365,10 +401,10 @@ class ObjectExplorer(App):
         with Horizontal():
             with Vertical(classes="column") as v:
                 v.styles.width = "30%"
-                yield DirectoryWidget(obj=self.obj)
+                yield DirectoryWidget(cached_object=self.cached_object)
 
-            with Vertical(classes="column"):
-                yield InspectedObjectWidget()
+            # with Vertical(classes="column"):
+            #     yield InspectedObjectWidget()
 
         yield Footer()
 
