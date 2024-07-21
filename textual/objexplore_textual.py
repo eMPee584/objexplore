@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.style import Style
 
 import textual
+from objexplore import cached_object
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.driver import Driver
@@ -131,7 +132,7 @@ class ChildWidget(Static):
                 # yield pretty
 
 
-class ChildrenWidget(Static):
+class ChildrenOptionList(Static):
     DEFAULT_CSS = """
     ChildrenWidget > OptionList:focus > .option-list--option-highlighted {
         text-style: reverse
@@ -144,18 +145,31 @@ class ChildrenWidget(Static):
     ]
     search_query = reactive("", recompose=True)
 
-    def __init__(self, options: List[Option], *args, **kwargs):
-        self.options = options
+    def __init__(self, cached_object: "CachedObject", *args, **kwargs):
+        self.options = cached_object
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield OptionList(*self.options)
+        yield OptionList(*self.get_options())
 
     def action_cursor_down(self) -> None:
         return self.query_one(OptionList).action_cursor_down()
 
     def action_cursor_up(self) -> None:
         return self.query_one(OptionList).action_cursor_up()
+
+    def get_options(self):
+        return []
+
+
+class PublicChildrenOptionList(ChildrenOptionList):
+    def get_options(self):
+        return self.options.get_public_children_options(self.search_query)
+
+
+class PrivateChildrenOptionList(ChildrenOptionList):
+    def get_options(self):
+        return self.options.get_private_children_options(self.search_query)
 
 
 class SearchableChildrenWidget(Static):
@@ -167,33 +181,28 @@ class SearchableChildrenWidget(Static):
     def compose(self):
         yield Input(placeholder="Search Attributes")
         with VerticalScroll():
-            yield ChildrenWidget(options=self.get_options())
+            yield ChildrenOptionList(cached_object=self.cached_object)
 
     @textual.on(Input.Changed)  # type: ignore
     def update_search_query(self, event: Input.Changed):
-        self.query_one(ChildrenWidget).search_query = event.value
+        self.query_one(ChildrenOptionList).search_query = event.value
 
     def get_options(self):
         return []
 
 
-class PublicChildrenWidget(SearchableChildrenWidget):
-    def get_options(self):
-        return [
-            option
-            for option in self.cached_object.public_children_options
-            # if self.search_query.lower() in option.id.lower()
-        ]
+class PublicSearchableChildrenWidget(SearchableChildrenWidget):
+    def compose(self):
+        yield Input(placeholder="Search Attributes")
+        with VerticalScroll():
+            yield PublicChildrenOptionList(cached_object=self.cached_object)
 
 
-class PrivateChildrenWidget(SearchableChildrenWidget):
-    def get_options(self):
-        # return self.cached_object.private_children_options
-        return [
-            option
-            for option in self.cached_object.private_children_options
-            # if self.search_query.lower() in option.id.lower()
-        ]
+class PrivateSearchableChildrenWidget(SearchableChildrenWidget):
+    def compose(self):
+        yield Input(placeholder="Search Attributes")
+        with VerticalScroll():
+            yield PrivateChildrenOptionList(cached_object=self.cached_object)
 
 
 class DirectoryWidget(Static):
@@ -204,10 +213,10 @@ class DirectoryWidget(Static):
     def compose(self):
         with TabbedContent():
             with TabPane("Public", id="public"):
-                yield PublicChildrenWidget(cached_object=self.cached_object)
+                yield PublicSearchableChildrenWidget(cached_object=self.cached_object)
 
             with TabPane("Private", id="private"):
-                yield PrivateChildrenWidget(cached_object=self.cached_object)
+                yield PrivateSearchableChildrenWidget(cached_object=self.cached_object)
 
 
 class DocstringWidget(Static):
@@ -323,12 +332,27 @@ class CachedObject:
             CachedObject(child) for child in self.private_children.values()
         ]
 
-        self.public_children_options = [
-            self.get_option_for_child(label) for label in self.public_children_labels
+        self.public_children_options = {
+            label: self.get_option_for_child(label)
+            for label in self.public_children_labels
+        }
+        self.private_children_options = {
+            label: self.get_option_for_child(label)
+            for label in self.private_children_labels
+        }
+
+    def get_public_children_options(self, search_query):
+        return [
+            option
+            for label, option in self.public_children_options.items()
+            if search_query.lower() in label.lower()
         ]
 
-        self.private_children_options = [
-            self.get_option_for_child(label) for label in self.private_children_labels
+    def get_private_children_options(self, search_query):
+        return [
+            option
+            for label, option in self.private_children_options.items()
+            if search_query.lower() in label.lower()
         ]
 
     def get_option_for_child(self, child_label):
