@@ -145,7 +145,7 @@ class ChildrenWidget(Static):
 
     search_query = reactive("", recompose=True)
 
-    def __init__(self, parent_cached_object, *args, **kwargs):
+    def __init__(self, parent_cached_object: "CachedObject", *args, **kwargs):
         self.parent_cached_object = parent_cached_object
         super().__init__(*args, **kwargs)
 
@@ -166,45 +166,6 @@ class ChildrenWidget(Static):
 
     def action_cursor_up(self) -> None:
         return self.query_one(OptionList).action_cursor_up()
-
-    def get_option_for_child(self, child_label):
-        child_object = getattr(self.parent_cached_object, child_label)
-
-        if child_object is None:
-            return Option(f"[strike][dim]{child_label}[/]", id=child_label)
-
-        elif inspect.isclass(child_object):
-            return Option(f"[magenta]{child_label}[/]", id=child_label)
-
-        elif inspect.ismodule(child_object):
-            return Option(f"[blue]{child_label}[/]", id=child_label)
-
-        elif inspect.ismethod(child_object) or inspect.isfunction(child_object):
-            return Option(f"[cyan]{child_label}[/cyan]()", id=child_label)
-
-        elif isinstance(child_object, dict):
-            return Option("{**[cyan]" + child_label + "[/]}", id=child_label)
-
-        elif isinstance(child_object, bool):
-            color = "green" if child_object else "red"
-            return Option(
-                f"{child_label} = [{color}][i]{child_object}[/i][/{color}]",
-                id=child_label,
-            )
-
-        elif isinstance(child_object, str):
-            return Option(
-                f"{child_label} = [green][i]'{child_object}'[/i][/green]",
-                id=child_label,
-            )
-
-        elif isinstance(child_object, list):
-            return Option(
-                "[*" + f"[red]{child_label}[/red]" + "]",
-                id=child_label,
-            )
-
-        return Option(child_label, id=child_label)
 
 
 class SearchableChildrenWidget(Static):
@@ -374,6 +335,59 @@ class CachedObject:
             CachedObject(child) for child in self.private_children.values()
         ]
 
+    @property
+    def public_children_options(self):
+        # return [Option(label, id=label) for label in self.public_children_labels]
+        return [
+            self.get_option_for_child(label) for label in self.public_children_labels
+        ]
+
+    @property
+    def private_children_options(self):
+        # return [Option(label, id=label) for label in self.private_children_labels]
+        return [
+            self.get_option_for_child(label) for label in self.private_children_labels
+        ]
+
+    def get_option_for_child(self, child_label):
+        child_object = getattr(self.obj, child_label)
+
+        if child_object is None:
+            return Option(f"[strike][dim]{child_label}[/]", id=child_label)
+
+        elif inspect.isclass(child_object):
+            return Option(f"[magenta]{child_label}[/]", id=child_label)
+
+        elif inspect.ismodule(child_object):
+            return Option(f"[blue]{child_label}[/]", id=child_label)
+
+        elif inspect.ismethod(child_object) or inspect.isfunction(child_object):
+            return Option(f"[cyan]{child_label}[/cyan]()", id=child_label)
+
+        elif isinstance(child_object, dict):
+            return Option("{**[cyan]" + child_label + "[/]}", id=child_label)
+
+        elif isinstance(child_object, bool):
+            color = "green" if child_object else "red"
+            return Option(
+                f"{child_label} = [{color}][i]{child_object}[/i][/{color}]",
+                id=child_label,
+            )
+
+        elif isinstance(child_object, str):
+            return Option(
+                f"{child_label} = [green][i]'{child_object}'[/i][/green]",
+                id=child_label,
+            )
+
+        elif isinstance(child_object, list):
+            return Option(
+                "[*" + f"[red]{child_label}[/red]" + "]",
+                id=child_label,
+            )
+
+        return Option(child_label, id=child_label)
+
 
 class ObjectExplorer(App):
     """A Textual app to manage stopwatches."""
@@ -416,10 +430,10 @@ class ObjectExplorer(App):
         """An action to toggle dark mode."""
         self.dark = not self.dark
 
-    def on_option_list_option_highlighted(self, event):
-        inspector = self.query_one(InspectedObjectWidget)
-        inspector.selected_object_label = event.option.id
-        inspector.selected_object = getattr(self.obj, event.option.id)
+    # def on_option_list_option_highlighted(self, event):
+    #     inspector = self.query_one(InspectedObjectWidget)
+    #     inspector.selected_object_label = event.option.id
+    #     inspector.selected_object = getattr(self.obj, event.option.id)
 
     def action_toggle_public_private(self):
         tabbed_content = self.query_one(TabbedContent)
