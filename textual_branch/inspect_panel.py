@@ -7,6 +7,8 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Label, Pretty, Static, Switch
 
+from objexplore.cached_object import CachedObject
+
 
 class PreviewWidget(Static):
     def __init__(self, selected_object, *args, **kwargs):
@@ -45,7 +47,7 @@ class InspectedObjectWidget(Static):
     }
     """
     selected_object_label = reactive("")
-    selected_object = reactive(None, recompose=True)
+    cached_object = reactive(CachedObject(None), recompose=True)
 
     def compose(self):
         with Horizontal() as h:
@@ -60,15 +62,16 @@ class InspectedObjectWidget(Static):
                 yield label
 
             with Vertical():
-                _type = Pretty(type(self.selected_object))
+                _type = Pretty(type(self.cached_object.obj))
                 _type.styles.border = ("round", "cyan")
                 _type.border_title = "Type"
                 _type.styles.border_title_color = "white"
                 _type.styles.border_title_style = Style(italic=True)
                 yield _type
 
-        with VerticalScroll():
-            yield PreviewWidget(selected_object=self.selected_object)
+        yield Static("hello")
+        # with VerticalScroll():
+        #     yield PreviewWidget(selected_object=self.cached_object)
 
 
 class DocstringWidget(Static):

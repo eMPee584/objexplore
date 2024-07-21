@@ -17,6 +17,7 @@ class ChildrenOptionList(Static):
     BINDINGS = [
         ("j", "cursor_down"),
         ("k", "cursor_up"),
+        # ("escape", "leave_focus"),
     ]
     search_query = reactive("", recompose=True)
 
@@ -35,6 +36,9 @@ class ChildrenOptionList(Static):
 
     def get_options(self):
         return []
+
+    # def action_leave_focus(self):
+    #     self.query_one(OptionList).blur()
 
 
 class Input(TextualInput):

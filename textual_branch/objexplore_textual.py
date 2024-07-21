@@ -56,7 +56,7 @@ class ObjectExplorer(App):
     def on_option_list_option_highlighted(self, event):
         inspector = self.query_one(InspectedObjectWidget)
         inspector.selected_object_label = event.option.id
-        inspector.selected_object = getattr(self.obj, event.option.id)
+        inspector.cached_object = self.cached_object.cached_children[event.option.id]  # type: ignore
 
     def action_toggle_public_private(self):
         tabbed_content = self.query_one(TabbedContent)
@@ -70,14 +70,12 @@ class ObjectExplorer(App):
         self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
     def action_cursor_down(self) -> None:
-        self.query_one(TabbedContent).active_pane.query_one(
-            OptionList
-        ).action_cursor_down()
+        option_list: OptionList = self.query_one(TabbedContent).active_pane.query_one(OptionList)  # type: ignore
+        option_list.focus()
 
     def action_cursor_up(self) -> None:
-        self.query_one(TabbedContent).active_pane.query_one(
-            OptionList
-        ).action_cursor_down()
+        option_list: OptionList = self.query_one(TabbedContent).active_pane.query_one(OptionList)  # type: ignore
+        option_list.focus()
 
 
 if __name__ == "__main__":

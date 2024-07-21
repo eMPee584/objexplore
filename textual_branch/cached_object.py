@@ -7,30 +7,25 @@ class CachedObject:
     def __init__(self, obj):
         self.obj = obj
 
+        self.children_labels = dir(obj)
+        self.children = {
+            label: getattr(self.obj, label) for label in self.children_labels
+        }
+
         self.public_children_labels = [
             label for label in dir(obj) if not label.startswith("_")
         ]
-        self.public_children = {
-            label: getattr(self.obj, label) for label in self.public_children_labels
-        }
 
         self.private_children_labels = [
             label for label in dir(obj) if label.startswith("_")
         ]
-        self.private_children = {
-            label: getattr(self.obj, label) for label in self.private_children_labels
-        }
 
-        self.public_children_cached_objects = []
-        self.private_children_cached_objects = []
+        self.cached_children = {}
 
     def cache(self):
-        self.public_children_cached_objects = [
-            CachedObject(child) for child in self.public_children.values()
-        ]
-        self.private_children_cached_objects = [
-            CachedObject(child) for child in self.private_children.values()
-        ]
+        self.cached_children = {
+            label: CachedObject(child) for label, child in self.children.items()
+        }
 
         self.public_children_options = {
             label: self.get_option_for_child(label)
