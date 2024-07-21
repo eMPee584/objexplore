@@ -2,7 +2,8 @@ from typing import List, Optional
 
 import rich
 from cached_object import CachedObject
-from directory_panel import DirectoryWidget, Input
+from common_widgets import Input
+from directory_panel import DirectoryWidget
 from inspect_panel import InspectedObjectWidget, get_inspect
 from rich.console import Console
 from textual.app import App, ComposeResult

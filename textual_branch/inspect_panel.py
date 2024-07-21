@@ -1,8 +1,8 @@
 import inspect
-from textwrap import wrap
 from typing import Any, Optional
 
-from directory_panel import Input
+import textual
+from common_widgets import Input
 from rich.pretty import Pretty as RichPretty
 from rich.style import Style
 from rich.table import Table
@@ -12,75 +12,63 @@ from textual.widgets import DataTable, Label, Pretty, Static, Switch
 
 from objexplore.cached_object import CachedObject
 
+# class ChildWidget(Static):
 
-class ChildWidget(Static):
-    DEFAULT_CSS = """
-    ChildWidget > *:hover {
-        background: $primary-background-darken-1;
-    }
-    """
+#     def __init__(self, parent_object, child_label, *args, **kwargs):
+#         self.parent_object = parent_object
+#         self.child_label = child_label
+#         super().__init__(*args, **kwargs)
 
-    def __init__(self, parent_object, child_label, *args, **kwargs):
-        self.parent_object = parent_object
-        self.child_label = child_label
+#     def on_mount(self):
+#         self.styles.height = "auto"
+
+#     def compose(self):
+#         table = DataTable(show_header=False)
+#         table.add_column("Attribute")
+#         table.add_column("Value")
+#         table.add_row(
+#             self.child_label,
+#             RichPretty(
+#                 getattr(self.parent_object, self.child_label),
+#                 overflow="ellipsis",
+#                 max_length=2,
+#             ),
+#         )
+
+#         yield table
+
+
+class ModuleClassPreviewWidget(Static):
+    search_query = reactive("", recompose=True)
+
+    def __init__(self, selected_object, *args, **kwargs):
+        # TODO make selected object a cached object
+        self.selected_object = selected_object
         super().__init__(*args, **kwargs)
 
-    def on_mount(self):
-        self.styles.height = "auto"
-
     def compose(self):
-        table = DataTable(show_header=False)
+        table = DataTable(cursor_type="row")
+        table.styles.text_align = "center"
+        table.styles.margin = (1, 0)
         table.add_column("Attribute")
         table.add_column("Value")
-        table.add_row(
-            self.child_label,
-            RichPretty(
-                getattr(self.parent_object, self.child_label),
-                overflow="ellipsis",
-            ),
-        )
+        for child_label in dir(self.selected_object):
+            if not self.search_query.lower() in child_label.lower():
+                continue
 
+            table.add_row(
+                child_label,
+                RichPretty(
+                    getattr(self.selected_object, child_label),
+                    overflow="ellipsis",
+                    max_length=2,
+                ),
+                height=3,
+            )
         yield table
 
 
-# table = Table(show_header=False)
-# table.add_column("Attribute", style="cyan")
-# table.add_column("Value", style="magenta")
-# table.add_row(
-#     self.child_label,
-#     RichPretty(
-#         getattr(self.parent_object, self.child_label),
-#         overflow="ellipsis",
-#         max_string=50,
-#     ),
-# )
-# yield Static(table)
-
-# actual_child_object = getattr(self.parent_object, self.child_label)
-
-# with Horizontal() as h:
-#     h.styles.height = "auto"
-#     with Vertical() as v:
-#         v.styles.height = "auto"
-#         v.styles.width = "25%"
-#         v.styles.align = ("right", "middle")
-#         v.styles.text_style = Style(bold=True, italic=True)
-#         label = Label(self.child_label)
-#         label.styles.margin = 1
-#         yield label
-
-# with Vertical() as v:
-#     v.styles.height = "3"
-#     v.styles.border = ("round", "green")
-#     yield Static("hello")
-
-
 class PreviewWidget(Static):
-    DEFAULT_CSS = """
-    PreviewWidget > DataTable {
-        width: auto;
-    }
-    """
 
     def __init__(self, cached_object, *args, **kwargs):
         self.cached_object = cached_object
@@ -107,21 +95,11 @@ class PreviewWidget(Static):
             self.selected_object
         ):
             yield Input(placeholder="Search Attributes")
+            yield ModuleClassPreviewWidget(self.selected_object)
 
-            table = DataTable(cursor_type="row")
-            table.add_column("Attribute")
-            table.add_column("Value")
-            for child_label in dir(self.selected_object):
-                table.add_row(
-                    child_label,
-                    RichPretty(
-                        getattr(self.selected_object, child_label),
-                        overflow="ellipsis",
-                        max_length=2,
-                    ),
-                    height=3,
-                )
-            yield table
+    @textual.on(Input.Changed)  # type: ignore
+    def update_search_query(self, event: Input.Changed):
+        self.query_one(ModuleClassPreviewWidget).search_query = event.value
 
 
 class InspectedObjectWidget(Static):
@@ -154,8 +132,7 @@ class InspectedObjectWidget(Static):
                 _type.styles.border_title_style = Style(italic=True)
                 yield _type
 
-        with VerticalScroll():
-            yield PreviewWidget(cached_object=self.cached_object)
+        yield PreviewWidget(cached_object=self.cached_object)
 
 
 class DocstringWidget(Static):

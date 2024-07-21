@@ -1,8 +1,8 @@
 import textual
 from cached_object import CachedObject
+from common_widgets import Input
 from textual.containers import VerticalScroll
 from textual.reactive import reactive
-from textual.widgets import Input as TextualInput
 from textual.widgets import OptionList, Static, TabbedContent, TabPane
 
 
@@ -16,7 +16,6 @@ class ChildrenOptionList(Static):
     BINDINGS = [
         ("j", "cursor_down"),
         ("k", "cursor_up"),
-        # ("escape", "leave_focus"),
     ]
     search_query = reactive("", recompose=True)
 
@@ -35,16 +34,6 @@ class ChildrenOptionList(Static):
 
     def get_options(self):
         return []
-
-    # def action_leave_focus(self):
-    #     self.query_one(OptionList).blur()
-
-
-class Input(TextualInput):
-    BINDINGS = [("escape", "leave_focus")]
-
-    def action_leave_focus(self):
-        self.blur()
 
 
 class SearchableChildrenWidget(Static):
