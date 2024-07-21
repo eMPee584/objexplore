@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import rich
 from rich.console import Console
@@ -145,21 +145,12 @@ class ChildrenWidget(Static):
 
     search_query = reactive("", recompose=True)
 
-    def __init__(self, parent_cached_object: "CachedObject", *args, **kwargs):
-        self.parent_cached_object = parent_cached_object
+    def __init__(self, options: List[Option], *args, **kwargs):
+        self.options = options
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield OptionList(*self.parent_cached_object.public_children_options)
-
-        # yield OptionList(
-        #     *[
-        #         self.get_option_for_child(child_label)
-        #         for child_label in self.child_labels
-        #         if self.search_query.lower() in child_label.lower()
-        #     ],
-        #     wrap=False,
-        # )
+        yield OptionList(*self.options)
 
     def action_cursor_down(self) -> None:
         return self.query_one(OptionList).action_cursor_down()
@@ -177,35 +168,25 @@ class SearchableChildrenWidget(Static):
     def compose(self):
         yield Input(placeholder="Search Attributes")
         with VerticalScroll():
-            yield ChildrenWidget(
-                parent_cached_object=self.cached_object,
-                # child_labels=self.get_child_labels(),
-            )
+            # yield ChildrenWidget(options=self.cached_object.public_children_options)
+            yield ChildrenWidget(options=self.get_options())
 
-    @textual.on(Input.Changed)
+    @textual.on(Input.Changed)  # type: ignore
     def update_search_query(self, event: Input.Changed):
         self.query_one(ChildrenWidget).search_query = event.value
 
-    def get_child_labels(self):
+    def get_options(self):
         return []
 
 
 class PublicChildrenWidget(SearchableChildrenWidget):
-    def get_child_labels(self):
-        return self.cached_object.public_children_labels
-        # return [
-        #     child_label
-        #     for child_label in dir(self.cached_object)
-        #     if not child_label.startswith("_")
-        # ]
+    def get_options(self):
+        return self.cached_object.public_children_options
 
 
 class PrivateChildrenWidget(SearchableChildrenWidget):
-    def get_child_labels(self):
-        return self.cached_object.private_children_labels
-        # return [
-        #     child_label for child_label in dir(self.cached_object) if child_label.startswith("_")
-        # ]
+    def get_options(self):
+        return self.cached_object.private_children_options
 
 
 class DirectoryWidget(Static):
@@ -327,7 +308,7 @@ class CachedObject:
         self.public_children_cached_objects = []
         self.private_children_cached_objects = []
 
-    def cache_children(self):
+    def cache(self):
         self.public_children_cached_objects = [
             CachedObject(child) for child in self.public_children.values()
         ]
@@ -335,17 +316,11 @@ class CachedObject:
             CachedObject(child) for child in self.private_children.values()
         ]
 
-    @property
-    def public_children_options(self):
-        # return [Option(label, id=label) for label in self.public_children_labels]
-        return [
+        self.public_children_options = [
             self.get_option_for_child(label) for label in self.public_children_labels
         ]
 
-    @property
-    def private_children_options(self):
-        # return [Option(label, id=label) for label in self.private_children_labels]
-        return [
+        self.private_children_options = [
             self.get_option_for_child(label) for label in self.private_children_labels
         ]
 
@@ -405,7 +380,7 @@ class ObjectExplorer(App):
     def __init__(self, *args, obj, **kwargs):
         self.obj = obj
         self.cached_object = CachedObject(obj)
-        self.cached_object.cache_children()
+        self.cached_object.cache()
         super().__init__(*args, **kwargs)
 
     def compose(self) -> ComposeResult:
