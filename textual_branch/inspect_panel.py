@@ -117,16 +117,11 @@ class PreviewWidget(Static):
                     RichPretty(
                         getattr(self.selected_object, child_label),
                         overflow="ellipsis",
-                        insert_line=False,
+                        max_length=2,
                     ),
+                    height=3,
                 )
             yield table
-
-            # # for child_label in dir(self.selected_object):
-            # for child_label in self.cached_object.children.keys():
-            #     yield ChildWidget(
-            #         parent_object=self.selected_object, child_label=child_label
-            #     )
 
 
 class InspectedObjectWidget(Static):
