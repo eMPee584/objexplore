@@ -1,19 +1,94 @@
 import inspect
+from textwrap import wrap
 from typing import Any, Optional
 
-from directory_panel import ChildWidget, Input
+from directory_panel import Input
+from rich.pretty import Pretty as RichPretty
 from rich.style import Style
+from rich.table import Table
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.reactive import reactive
-from textual.widgets import Label, Pretty, Static, Switch
+from textual.widgets import DataTable, Label, Pretty, Static, Switch
 
 from objexplore.cached_object import CachedObject
 
 
-class PreviewWidget(Static):
-    def __init__(self, selected_object, *args, **kwargs):
-        self.selected_object = selected_object
+class ChildWidget(Static):
+    DEFAULT_CSS = """
+    ChildWidget > *:hover {
+        background: $primary-background-darken-1;
+    }
+    """
+
+    def __init__(self, parent_object, child_label, *args, **kwargs):
+        self.parent_object = parent_object
+        self.child_label = child_label
         super().__init__(*args, **kwargs)
+
+    def on_mount(self):
+        self.styles.height = "auto"
+
+    def compose(self):
+        table = DataTable(show_header=False)
+        table.add_column("Attribute")
+        table.add_column("Value")
+        table.add_row(
+            self.child_label,
+            RichPretty(
+                getattr(self.parent_object, self.child_label),
+                overflow="ellipsis",
+            ),
+        )
+
+        yield table
+
+
+# table = Table(show_header=False)
+# table.add_column("Attribute", style="cyan")
+# table.add_column("Value", style="magenta")
+# table.add_row(
+#     self.child_label,
+#     RichPretty(
+#         getattr(self.parent_object, self.child_label),
+#         overflow="ellipsis",
+#         max_string=50,
+#     ),
+# )
+# yield Static(table)
+
+# actual_child_object = getattr(self.parent_object, self.child_label)
+
+# with Horizontal() as h:
+#     h.styles.height = "auto"
+#     with Vertical() as v:
+#         v.styles.height = "auto"
+#         v.styles.width = "25%"
+#         v.styles.align = ("right", "middle")
+#         v.styles.text_style = Style(bold=True, italic=True)
+#         label = Label(self.child_label)
+#         label.styles.margin = 1
+#         yield label
+
+# with Vertical() as v:
+#     v.styles.height = "3"
+#     v.styles.border = ("round", "green")
+#     yield Static("hello")
+
+
+class PreviewWidget(Static):
+    DEFAULT_CSS = """
+    PreviewWidget > DataTable {
+        width: auto;
+    }
+    """
+
+    def __init__(self, cached_object, *args, **kwargs):
+        self.cached_object = cached_object
+        super().__init__(*args, **kwargs)
+
+    @property
+    def selected_object(self):
+        return self.cached_object.obj
 
     def compose(self):
         if isinstance(self.selected_object, bool):
@@ -33,10 +108,25 @@ class PreviewWidget(Static):
         ):
             yield Input(placeholder="Search Attributes")
 
+            table = DataTable(cursor_type="row")
+            table.add_column("Attribute")
+            table.add_column("Value")
             for child_label in dir(self.selected_object):
-                yield ChildWidget(
-                    parent_object=self.selected_object, child_label=child_label
+                table.add_row(
+                    child_label,
+                    RichPretty(
+                        getattr(self.selected_object, child_label),
+                        overflow="ellipsis",
+                        insert_line=False,
+                    ),
                 )
+            yield table
+
+            # # for child_label in dir(self.selected_object):
+            # for child_label in self.cached_object.children.keys():
+            #     yield ChildWidget(
+            #         parent_object=self.selected_object, child_label=child_label
+            #     )
 
 
 class InspectedObjectWidget(Static):
@@ -69,9 +159,8 @@ class InspectedObjectWidget(Static):
                 _type.styles.border_title_style = Style(italic=True)
                 yield _type
 
-        yield Static("hello")
-        # with VerticalScroll():
-        #     yield PreviewWidget(selected_object=self.cached_object)
+        with VerticalScroll():
+            yield PreviewWidget(cached_object=self.cached_object)
 
 
 class DocstringWidget(Static):

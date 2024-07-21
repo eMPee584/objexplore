@@ -1,10 +1,9 @@
 import textual
 from cached_object import CachedObject
-from rich.style import Style
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Input as TextualInput
-from textual.widgets import Label, OptionList, Static, TabbedContent, TabPane
+from textual.widgets import OptionList, Static, TabbedContent, TabPane
 
 
 class ChildrenOptionList(Static):
@@ -103,38 +102,3 @@ class DirectoryWidget(Static):
 
             with TabPane("Private", id="private"):
                 yield PrivateSearchableChildrenWidget(cached_object=self.cached_object)
-
-
-class ChildWidget(Static):
-    DEFAULT_CSS = """
-    ChildWidget > * > *:hover {
-        background: $primary-background-darken-1;
-    }
-    """
-
-    def __init__(self, parent_object, child_label, *args, **kwargs):
-        self.parent_object = parent_object
-        self.child_label = child_label
-        super().__init__(*args, **kwargs)
-
-    def on_mount(self):
-        self.styles.height = "auto"
-
-    def compose(self):
-        actual_child_object = getattr(self.parent_object, self.child_label)
-
-        with Horizontal() as h:
-            h.styles.height = "auto"
-            with Vertical() as v:
-                v.styles.height = "auto"
-                v.styles.width = "25%"
-                v.styles.align = ("right", "middle")
-                v.styles.text_style = Style(bold=True, italic=True)
-                label = Label(self.child_label)
-                label.styles.margin = 1
-                yield label
-
-            with Vertical() as v:
-                v.styles.height = "3"
-                v.styles.border = ("round", "green")
-                yield Static("hello")
