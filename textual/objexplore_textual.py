@@ -142,7 +142,6 @@ class ChildrenWidget(Static):
         ("j", "cursor_down"),
         ("k", "cursor_up"),
     ]
-
     search_query = reactive("", recompose=True)
 
     def __init__(self, options: List[Option], *args, **kwargs):
@@ -168,7 +167,6 @@ class SearchableChildrenWidget(Static):
     def compose(self):
         yield Input(placeholder="Search Attributes")
         with VerticalScroll():
-            # yield ChildrenWidget(options=self.cached_object.public_children_options)
             yield ChildrenWidget(options=self.get_options())
 
     @textual.on(Input.Changed)  # type: ignore
@@ -181,12 +179,21 @@ class SearchableChildrenWidget(Static):
 
 class PublicChildrenWidget(SearchableChildrenWidget):
     def get_options(self):
-        return self.cached_object.public_children_options
+        return [
+            option
+            for option in self.cached_object.public_children_options
+            # if self.search_query.lower() in option.id.lower()
+        ]
 
 
 class PrivateChildrenWidget(SearchableChildrenWidget):
     def get_options(self):
-        return self.cached_object.private_children_options
+        # return self.cached_object.private_children_options
+        return [
+            option
+            for option in self.cached_object.private_children_options
+            # if self.search_query.lower() in option.id.lower()
+        ]
 
 
 class DirectoryWidget(Static):
