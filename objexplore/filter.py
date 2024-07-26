@@ -11,7 +11,7 @@ from rich.panel import Panel
 from rich.style import Style
 from rich.text import Text
 
-from .cached_object import CachedObject
+from .cached_object import OldCachedObjec
 from .config import box_type
 
 console = Console()
@@ -20,55 +20,55 @@ highlighter = ReprHighlighter()
 # TODO scroll search if input longer than panel width
 
 
-def isclass(cached_obj: CachedObject):
+def isclass(cached_obj: OldCachedObjec):
     return cached_obj.isclass
 
 
-def isfunction(cached_obj: CachedObject):
+def isfunction(cached_obj: OldCachedObjec):
     return cached_obj.isfunction
 
 
-def ismethod(cached_obj: CachedObject):
+def ismethod(cached_obj: OldCachedObjec):
     return cached_obj.ismethod
 
 
-def ismodule(cached_obj: CachedObject):
+def ismodule(cached_obj: OldCachedObjec):
     return cached_obj.ismodule
 
 
-def isbuiltin(cached_obj: CachedObject):
+def isbuiltin(cached_obj: OldCachedObjec):
     return cached_obj.isbuiltin
 
 
-def isint(cached_obj: CachedObject):
+def isint(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == int
 
 
-def isstr(cached_obj: CachedObject):
+def isstr(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == str
 
 
-def isfloat(cached_obj: CachedObject):
+def isfloat(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == float
 
 
-def isbool(cached_obj: CachedObject):
+def isbool(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == bool
 
 
-def isdict(cached_obj: CachedObject):
+def isdict(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == dict
 
 
-def islist(cached_obj: CachedObject):
+def islist(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == list
 
 
-def istuple(cached_obj: CachedObject):
+def istuple(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == tuple
 
 
-def isset(cached_obj: CachedObject):
+def isset(cached_obj: OldCachedObjec):
     return type(cached_obj.obj) == set
 
 
@@ -124,14 +124,14 @@ class Filter:
     def selected_filter(self):
         return list(self.filters.keys())[self.index]
 
-    def toggle(self, cached_obj: CachedObject):
-        """ Toggle the selected filter on or off and update the cached_obj filters with the new filters """
+    def toggle(self, cached_obj: OldCachedObjec):
+        """Toggle the selected filter on or off and update the cached_obj filters with the new filters"""
         self.filters[self.selected_filter][0] = not self.filters[self.selected_filter][
             0
         ]
         cached_obj.set_filters(self.get_enabled_filters(), self.search_filter)
 
-    def clear_filters(self, cached_obj: CachedObject):
+    def clear_filters(self, cached_obj: OldCachedObjec):
         for name, filter_data in self.filters.copy().items():
             self.filters[name][0] = False
         self.search_filter = ""
@@ -164,7 +164,7 @@ class Filter:
     def add_search_char(
         self,
         key: blessed.keyboard.Keystroke,
-        cached_obj: CachedObject,
+        cached_obj: OldCachedObjec,
         live_update: bool,
     ):
         self.key_history.append(key)
@@ -178,7 +178,7 @@ class Filter:
         if live_update:
             cached_obj.set_filters(self.get_enabled_filters(), self.search_filter)
 
-    def backspace(self, cached_obj: CachedObject, live_update: bool):
+    def backspace(self, cached_obj: OldCachedObjec, live_update: bool):
         """Delete the character before the cursor.
         Args:
             cached_obj: The current object being explored.
@@ -201,7 +201,7 @@ class Filter:
         if live_update:
             cached_obj.set_filters(self.get_enabled_filters(), self.search_filter)
 
-    def cancel_search(self, cached_obj: CachedObject):
+    def cancel_search(self, cached_obj: OldCachedObjec):
         self.search_filter = ""
         self.cursor_pos = 0
         self.layout.visible = False
@@ -216,7 +216,7 @@ class Filter:
         if self.cursor_pos < len(self.search_filter):
             self.cursor_pos += 1
 
-    def end_search(self, cached_obj: CachedObject):
+    def end_search(self, cached_obj: OldCachedObjec):
         self.receiving_input = False
         self.layout.visible = False
         cached_obj.set_filters(

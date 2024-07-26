@@ -8,9 +8,9 @@ from rich.style import Style
 from rich.syntax import Syntax
 from rich.text import Text
 
-from .cached_object import CachedObject
-from .help_layout import HelpLayout
+from .cached_object import OldCachedObjec
 from .config import box_type
+from .help_layout import HelpLayout
 
 
 class OverviewState:
@@ -33,7 +33,7 @@ class Overview:
     def layout_width(self):
         return (self.term.width - 2) // 4 * 3
 
-    def get_layout(self, cached_obj: CachedObject) -> Layout:
+    def get_layout(self, cached_obj: OldCachedObjec) -> Layout:
         """
         :param cached_obj: The selected cached object given by the explorer layout
         """
@@ -68,7 +68,7 @@ class Overview:
         else:
             raise ValueError("Unexpected overview state")
 
-    def get_value_panel(self, cached_obj: CachedObject):
+    def get_value_panel(self, cached_obj: OldCachedObjec):
         renderable: Union[str, Pretty, Syntax]
         if not callable(cached_obj.obj):
             title = "[i]preview[/i] | [i][cyan]repr[/cyan]()[/i]"
@@ -103,7 +103,7 @@ class Overview:
             box=box_type,
         )
 
-    def get_info_layout(self, cached_obj: CachedObject):
+    def get_info_layout(self, cached_obj: OldCachedObjec):
         if cached_obj.length is not None:
             layout = Layout(size=3)
             layout.split_row(
@@ -123,7 +123,7 @@ class Overview:
         else:
             return self.get_type_panel(cached_obj)
 
-    def get_type_panel(self, cached_obj: CachedObject):
+    def get_type_panel(self, cached_obj: OldCachedObjec):
         return Layout(
             Panel(
                 cached_obj.typeof,
@@ -137,10 +137,10 @@ class Overview:
 
     def get_docstring_panel(
         self,
-        cached_obj: CachedObject,
+        cached_obj: OldCachedObjec,
         term_height: int,
     ) -> Panel:
-        """ Build the docstring panel """
+        """Build the docstring panel"""
         title = "[i]docstring"
         if self.state == OverviewState.docstring:
             subtitle = "[dim][u]d[/u]:toggle [u]f[/u]:fullscreen"

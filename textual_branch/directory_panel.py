@@ -20,11 +20,11 @@ class ChildrenOptionList(Static):
     search_query = reactive("", recompose=True)
 
     def __init__(self, cached_object: "CachedObject", *args, **kwargs):
-        self.options = cached_object
+        self.cached_object = cached_object
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield OptionList(*self.get_options())
+        yield OptionList(*self.get_options(), wrap=False)
 
     def action_cursor_down(self) -> None:
         return self.query_one(OptionList).action_cursor_down()
@@ -57,7 +57,7 @@ class SearchableChildrenWidget(Static):
 
 class PrivateChildrenOptionList(ChildrenOptionList):
     def get_options(self):
-        return self.options.get_private_children_options(self.search_query)
+        return self.cached_object.get_private_children_options(self.search_query)
 
 
 class PrivateSearchableChildrenWidget(SearchableChildrenWidget):
@@ -69,7 +69,7 @@ class PrivateSearchableChildrenWidget(SearchableChildrenWidget):
 
 class PublicChildrenOptionList(ChildrenOptionList):
     def get_options(self):
-        return self.options.get_public_children_options(self.search_query)
+        return self.cached_object.get_public_children_options(self.search_query)
 
 
 class PublicSearchableChildrenWidget(SearchableChildrenWidget):

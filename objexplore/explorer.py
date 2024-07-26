@@ -8,10 +8,10 @@ from rich.panel import Panel
 from rich.style import Style
 from rich.text import Text
 
-from .cached_object import CachedObject
+from .cached_object import OldCachedObjec
+from .config import box_type
 from .filter import Filter
 from .stack import Stack, StackFrame
-from .config import box_type
 
 console = Console()
 
@@ -27,7 +27,7 @@ class ExplorerState:
     set = "ExplorerState.set"
 
 
-def get_state(cached_obj: CachedObject):
+def get_state(cached_obj: OldCachedObjec):
     if isinstance(cached_obj.obj, dict):
         return ExplorerState.dict
     elif isinstance(cached_obj.obj, list):
@@ -56,7 +56,7 @@ class Explorer:
 
     def __init__(
         self,
-        cached_obj: CachedObject,
+        cached_obj: OldCachedObjec,
         term: Terminal,
         filter: Optional[Filter] = None,
         stack: Optional[Stack] = None,
@@ -90,7 +90,7 @@ class Explorer:
             self.state = get_state(self.cached_obj)
 
     def get_layout(self) -> Layout:
-        """ Return the layout of the object explorer. This will be a list of lines representing the object attributes/keys/vals we are exploring """
+        """Return the layout of the object explorer. This will be a list of lines representing the object attributes/keys/vals we are exploring"""
         explorer_layout = Layout(size=self.layout_width)
 
         if self.state == ExplorerState.dict:
@@ -252,7 +252,7 @@ class Explorer:
 
     @property
     def dict_panel(self) -> Panel:
-        """ Return the dictionary explorer layout """
+        """Return the dictionary explorer layout"""
 
         # Reset the dict index / window in case applying a filter has now moved the index
         # farther down than it can access on the filtered attributes
@@ -320,7 +320,7 @@ class Explorer:
 
     @property
     def list_panel(self) -> Panel:
-        """ TODO """
+        """TODO"""
         # Reset the list index / window in case applying a filter has now moved the index
         # farther down than it can access on the filtered attributes
         if self.list_index >= len(self.cached_obj.filtered_list):
@@ -391,8 +391,8 @@ class Explorer:
             box=box_type,
         )
 
-    def explore_selected_object(self) -> Optional[CachedObject]:
-        """ TODO """
+    def explore_selected_object(self) -> Optional[OldCachedObjec]:
+        """TODO"""
 
         # Save current stack as a frame
         current_frame = StackFrame(
@@ -426,7 +426,7 @@ class Explorer:
         return None
 
     def explore_parent_obj(self):
-        """ Go back to exploring the parent obj of the current obj """
+        """Go back to exploring the parent obj of the current obj"""
         stack_frame = self.stack.pop()
         if stack_frame:
             self.cached_obj = stack_frame.cached_obj
@@ -461,7 +461,7 @@ class Explorer:
         return self.cached_obj
 
     def move_up(self):
-        """ Move the current selection up one """
+        """Move the current selection up one"""
         if self.state == ExplorerState.public:
             if self.public_index > 0:
                 self.public_index -= 1
@@ -491,7 +491,7 @@ class Explorer:
                 self.list_window -= 1
 
     def move_down(self):
-        """ Move the current selection down one """
+        """Move the current selection down one"""
         if self.state == ExplorerState.public:
             if self.public_index < self.num_filtered_attributes - 1:
                 self.public_index += 1
@@ -630,7 +630,7 @@ class Explorer:
 
     @property
     def num_attributes(self) -> int:
-        """ Return the number of attributes of the current cached object """
+        """Return the number of attributes of the current cached object"""
         if self.state == ExplorerState.public:
             return self.cached_obj.num_public_attributes
         elif self.state == ExplorerState.private:
@@ -640,7 +640,7 @@ class Explorer:
 
     @property
     def num_filtered_attributes(self) -> int:
-        """ Return the number of filtered attributes """
+        """Return the number of filtered attributes"""
         if self.state == ExplorerState.public:
             return self.cached_obj.num_filtered_public_attributes
         elif self.state == ExplorerState.private:
@@ -667,8 +667,8 @@ class Explorer:
         return self.num_attributes < 130
 
     @property
-    def selected_object(self) -> CachedObject:
-        """ Return the currently selected cached object """
+    def selected_object(self) -> OldCachedObjec:
+        """Return the currently selected cached object"""
         try:
             if self.state == ExplorerState.public:
                 attr = list(self.cached_obj.filtered_public_attributes.keys())[
@@ -697,7 +697,7 @@ class Explorer:
                 raise ValueError("Unexpected explorer state")
 
         except (KeyError, IndexError):
-            return CachedObject(None)
+            return OldCachedObjec(None)
 
     @property
     def layout_width(self):
@@ -709,7 +709,7 @@ class Explorer:
 
     @property
     def text_width(self):
-        """ Return the width of text allowed within the panel """
+        """Return the width of text allowed within the panel"""
         return self.layout_width - 4
 
     def increase_width(self):

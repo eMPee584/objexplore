@@ -2,15 +2,15 @@ import inspect
 from typing import Any, Optional
 
 import textual
+from cached_object import CachedObject
 from common_widgets import Input
 from rich.pretty import Pretty as RichPretty
 from rich.style import Style
 from rich.table import Table
+from textual import on
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.reactive import reactive
-from textual.widgets import DataTable, Label, Pretty, Static, Switch
-
-from objexplore.cached_object import CachedObject
+from textual.widgets import DataTable, Label, Placeholder, Pretty, Static, Switch
 
 # class ChildWidget(Static):
 
@@ -47,30 +47,82 @@ class ModuleClassPreviewWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        table = DataTable(cursor_type="row")
-        table.styles.text_align = "center"
-        table.styles.margin = (1, 0)
-        table.add_column("Attribute")
-        table.add_column("Value")
-        for child_label in dir(self.selected_object):
-            if not self.search_query.lower() in child_label.lower():
-                continue
+        yield Static("hello")
+        # table = DataTable(cursor_type="row")
+        # table.styles.text_align = "center"
+        # table.styles.margin = (1, 0)
+        # table.add_column("Attribute")
+        # table.add_column("Value")
+        # for child_label in dir(self.selected_object):
+        #     if not self.search_query.lower() in child_label.lower():
+        #         continue
 
-            table.add_row(
-                child_label,
-                RichPretty(
-                    getattr(self.selected_object, child_label),
-                    overflow="ellipsis",
-                    max_length=2,
-                ),
-                height=3,
-            )
-        yield table
+        #     table.add_row(
+        #         child_label,
+        #         RichPretty(
+        #             getattr(self.selected_object, child_label),
+        #             overflow="ellipsis",
+        #             max_length=2,
+        #         ),
+        #         height=3,
+        #     )
+        # yield table
+
+
+class BoolPreview(Static):
+    DEFAULT_CSS = """
+    BoolPreview { 
+        layout: horizontal;
+    }
+    """
+
+    def __init__(self, cached_object: CachedObject, *args, **kwargs):
+        self.cached_object = cached_object
+        super().__init__(*args, **kwargs)
+
+    def compose(self):
+        with Horizontal():
+            with Vertical() as v:
+                v.styles.align_horizontal = "right"
+                v.styles.padding = 1
+                yield Label(RichPretty(self.cached_object.obj))
+
+            with Vertical():
+                yield Switch(self.cached_object.obj)
+
+
+class PreviewHeader(Static):
+
+    def __init__(self, cached_object: CachedObject, *args, **kwargs):
+        self.cached_object = cached_object
+        super().__init__(*args, **kwargs)
+
+    def on_mount(self):
+        self.styles.height = 3
+
+    def compose(self):
+        with Horizontal():
+            with Vertical():
+                label = Label(self.cached_object.label)
+                label.styles.border = ("round", "white")
+                label.border_title = "Name"
+                label.styles.border_title_color = "white"
+                label.styles.border_title_style = Style(italic=True)
+                label.styles.width = "100%"
+                yield label
+
+            with Vertical():
+                _type = Pretty(type(self.cached_object.obj))
+                _type.styles.border = ("round", "white")
+                _type.border_title = "Type"
+                _type.styles.border_title_color = "white"
+                _type.styles.border_title_style = Style(italic=True)
+                yield _type
 
 
 class PreviewWidget(Static):
 
-    def __init__(self, cached_object, *args, **kwargs):
+    def __init__(self, cached_object: CachedObject, *args, **kwargs):
         self.cached_object = cached_object
         super().__init__(*args, **kwargs)
 
@@ -79,23 +131,14 @@ class PreviewWidget(Static):
         return self.cached_object.obj
 
     def compose(self):
-        if isinstance(self.selected_object, bool):
-            with Horizontal():
-                with Vertical():
-                    p = Pretty(self.selected_object)
-                    p.styles.border = ("round", "cyan")
-                    p.border_title = "Value"
-                    p.styles.border_title_color = "white"
-                    p.styles.border_title_style = Style(italic=True)
-                    yield p
-                with Vertical():
-                    yield Switch(self.selected_object)
+        yield PreviewHeader(self.cached_object)
 
-        elif inspect.isclass(self.selected_object) or inspect.ismodule(
-            self.selected_object
-        ):
-            yield Input(placeholder="Search Attributes")
-            yield ModuleClassPreviewWidget(self.selected_object)
+        if self.cached_object.isbool:
+            yield BoolPreview(cached_object=self.cached_object)
+
+        # elif inspect.isclass(self.selected_object) or self.cached_object.ismodule:
+        #     yield Input(placeholder="Search Attributes")
+        #     yield ModuleClassPreviewWidget(self.selected_object)
 
     @textual.on(Input.Changed)  # type: ignore
     def update_search_query(self, event: Input.Changed):
@@ -109,51 +152,30 @@ class InspectedObjectWidget(Static):
         border: wide black;
     }
     """
-    selected_object_label = reactive("")
-    cached_object = reactive(CachedObject(None), recompose=True)
+    cached_object = reactive(CachedObject(None, "None"), recompose=True)
 
     def compose(self):
-        with Horizontal() as h:
-            h.styles.height = "3"
+        with Horizontal():
             with Vertical():
-                label = Label(self.selected_object_label)
-                label.styles.border = ("round", "cyan")
-                label.border_title = "Name"
-                label.styles.border_title_color = "white"
-                label.styles.border_title_style = Style(italic=True)
-                label.styles.width = "100%"
-                yield label
+                yield PreviewWidget(cached_object=self.cached_object)
 
-            with Vertical():
-                _type = Pretty(type(self.cached_object.obj))
-                _type.styles.border = ("round", "cyan")
-                _type.border_title = "Type"
-                _type.styles.border_title_color = "white"
-                _type.styles.border_title_style = Style(italic=True)
-                yield _type
-
-        yield PreviewWidget(cached_object=self.cached_object)
+            if self.cached_object.docstring != "None":
+                with Vertical():
+                    yield DocsWidget(self.cached_object)
 
 
-class DocstringWidget(Static):
-    DEFAULT_CSS = """
-    DocstringWidget:hover {
-        background: $primary-background-darken-1;
-    }
-    """
-
-    def __init__(self, selected_object, *args, **kwargs):
-        self.selected_object = selected_object
+class DocsWidget(Static):
+    def __init__(self, cached_object: CachedObject, *args, **kwargs):
+        self.cached_object = cached_object
         super().__init__(*args, **kwargs)
 
     def on_mount(self):
-        self.styles.border = ("round", "green")
         self.border_title = "docstring"
+        self.styles.border = ("round", "white")
         self.styles.border_title_style = Style(italic=True, color="white")
 
-    def render(self):
-        docstring = inspect.getdoc(self.selected_object) or "None"
-        return docstring
+    def compose(self):
+        yield VerticalScroll(Static(self.cached_object.docstring))
 
 
 def get_inspect(

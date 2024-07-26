@@ -9,7 +9,7 @@ from rich.style import Style
 from rich.text import Text
 from rich.tree import Tree
 
-from .cached_object import CachedObject
+from .cached_object import OldCachedObjec
 from .filter import Filter
 
 console = Console()
@@ -18,10 +18,10 @@ console = Console()
 @rich.repr.auto
 @dataclass
 class StackFrame:
-    """ Datastructure to store a frame in the object stack """
+    """Datastructure to store a frame in the object stack"""
 
     # flake8: noqa
-    cached_obj: CachedObject
+    cached_obj: OldCachedObjec
     filter: Filter
     state: "ExplorerState"  # type: ignore
     public_index: int
@@ -35,7 +35,7 @@ class StackFrame:
 
 
 class Stack:
-    def __init__(self, head_obj: CachedObject):
+    def __init__(self, head_obj: OldCachedObjec):
         self.head_obj = head_obj
         self.index = 0
         self.layout = Layout(visible=False)
@@ -56,7 +56,7 @@ class Stack:
         self.layout.visible = True
         self.index = len(self.stack)
 
-    def get_layout(self, width: int, current_obj: CachedObject) -> Layout:
+    def get_layout(self, width: int, current_obj: OldCachedObjec) -> Layout:
 
         # Add the head obj as the base of the tree
         head_label = self.head_obj.repr

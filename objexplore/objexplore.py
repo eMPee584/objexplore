@@ -16,11 +16,11 @@ from rich.style import Style
 from rich.syntax import Syntax
 from rich.text import Text
 
-from .cached_object import CachedObject
+from .cached_object import OldCachedObjec
+from .config import box_type
 from .explorer import Explorer, ExplorerState
 from .help_layout import HelpState, random_error_quote
 from .overview import Overview, OverviewState, PreviewState
-from .config import box_type
 
 # TODO object highlighted on stack view should be shown on the overview
 # TODO support ctrl-a + (whatever emacs keybinding to go to end of line)
@@ -34,14 +34,14 @@ EDITOR = os.environ.get("EDITOR")
 
 
 class ObjExploreApp:
-    """ Main Application class """
+    """Main Application class"""
 
     error_style = Style(color="red")
     main_style = Style(color="blue")
     term = Terminal()
 
     def __init__(self, obj: Any, name: str):
-        cached_obj = CachedObject(obj, attr_name=name)
+        cached_obj = OldCachedObjec(obj, attr_name=name)
         # Figure out all the attributes of the current obj's attributes
         cached_obj.cache()
 
@@ -56,7 +56,7 @@ class ObjExploreApp:
             pass
 
     def explore(self) -> Optional[Any]:
-        """ Open the interactive explorer. This is the main running loop """
+        """Open the interactive explorer. This is the main running loop"""
 
         key = None
         res = None
@@ -92,7 +92,7 @@ class ObjExploreApp:
         return res
 
     def process_key_event(self, key: Keystroke) -> Any:
-        """ Process the incoming key """
+        """Process the incoming key"""
 
         if self.explorer.filter.receiving_input:
             if key.code == self.term.KEY_BACKSPACE:
@@ -378,7 +378,7 @@ class ObjExploreApp:
             pydoc.pager(str_out)
 
     def draw(self, *_):
-        """ Draw the application. the *_ argument is due to resize events and are unused """
+        """Draw the application. the *_ argument is due to resize events and are unused"""
         print(self.term.home, end="")
         layout = Layout()
         layout.split_row(
@@ -408,7 +408,7 @@ class ObjExploreApp:
         rich.print(object_explorer, end="")
 
     def error(self):
-        """ Color the outside red and pause for a split second """
+        """Color the outside red and pause for a split second"""
         self.main_style = self.error_style
         self.draw()
         time.sleep(0.25)

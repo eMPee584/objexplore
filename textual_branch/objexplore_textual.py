@@ -1,3 +1,4 @@
+import inspect
 from typing import List, Optional
 
 import rich
@@ -28,7 +29,11 @@ class ObjectExplorer(App):
 
     def __init__(self, *args, obj, **kwargs):
         self.obj = obj
-        self.cached_object = CachedObject(obj)
+
+        frame = inspect.currentframe()
+        label = frame.f_back.f_code.co_names[1]  # type: ignore
+
+        self.cached_object = CachedObject(obj, label=label)
         self.cached_object.cache()
         super().__init__(*args, **kwargs)
 
@@ -56,7 +61,6 @@ class ObjectExplorer(App):
 
     def on_option_list_option_highlighted(self, event):
         inspector = self.query_one(InspectedObjectWidget)
-        inspector.selected_object_label = event.option.id
         inspector.cached_object = self.cached_object.cached_children[event.option.id]  # type: ignore
 
     def action_toggle_public_private(self):
@@ -71,13 +75,12 @@ class ObjectExplorer(App):
         self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
     def action_cursor_down(self) -> None:
-        option_list: OptionList = self.query_one(TabbedContent).active_pane.query_one(OptionList)  # type: ignore
+        option_list: OptionList = self.query_one(DirectoryWidget).query_one(TabbedContent).active_pane.query_one(OptionList)  # type: ignore
         option_list.focus()
 
     def action_cursor_up(self) -> None:
-        option_list: OptionList = self.query_one(TabbedContent).active_pane.query_one(OptionList)  # type: ignore
+        option_list: OptionList = self.query_one(DirectoryWidget).query_one(TabbedContent).active_pane.query_one(OptionList)  # type: ignore
         option_list.focus()
-
 
 if __name__ == "__main__":
     import pandas
@@ -85,5 +88,7 @@ if __name__ == "__main__":
     # app = ObjectExplorer(obj=pandas)
     app = ObjectExplorer(obj=rich)
     # app = ObjectExplorer(obj=console)
+    # app.run(inline=True)
+    app.run()
     # app.run(inline=True)
     app.run()

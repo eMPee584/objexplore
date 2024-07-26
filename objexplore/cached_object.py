@@ -1,7 +1,7 @@
-from dataclasses import dataclass
 import importlib
 import inspect
 import pkgutil
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from rich.console import Console
@@ -29,7 +29,7 @@ def safegetattr(obj, attr):
         return None
 
 
-class CachedObject:
+class OldCachedObjec:
     """Internal representation of every object that is being inspected/explored by objexplore
 
     TODO add documentation on all the attributes of this object
@@ -97,10 +97,10 @@ class CachedObject:
             attr for attr in self.plain_attrs if attr.startswith("_")
         )
 
-        self.public_attributes: Dict[str, CachedObject] = {}
-        self.private_attributes: Dict[str, CachedObject] = {}
-        self.filtered_public_attributes: Dict[str, CachedObject] = {}
-        self.filtered_private_attributes: Dict[str, CachedObject] = {}
+        self.public_attributes: Dict[str, OldCachedObjec] = {}
+        self.private_attributes: Dict[str, OldCachedObjec] = {}
+        self.filtered_public_attributes: Dict[str, OldCachedObjec] = {}
+        self.filtered_private_attributes: Dict[str, OldCachedObjec] = {}
 
         try:
             self._source = inspect.getsource(self.obj)  # type: ignore
@@ -186,7 +186,7 @@ class CachedObject:
 
     @property
     def title(self):
-        """ TODO """
+        """TODO"""
         # for cases when the object is a huge dictionary we shouldnt try to render the whole dict
         if len(self.repr.plain) > console.width - 4:
             return Text(self.attr_name) + Text(" ") + self.typeof
@@ -195,11 +195,11 @@ class CachedObject:
         return title
 
     def cache(self):
-        """ Cache any attributes that are useful to this object for easy access later """
+        """Cache any attributes that are useful to this object for easy access later"""
 
         if not self.public_attributes:
             for attr in self.plain_public_attributes:
-                self.public_attributes[attr] = CachedObject(
+                self.public_attributes[attr] = OldCachedObjec(
                     safegetattr(self.obj, attr),
                     parent_path=self.dotpath,
                     attr_name=attr,
@@ -207,7 +207,7 @@ class CachedObject:
 
         if not self.private_attributes:
             for attr in self.plain_private_attributes:
-                self.private_attributes[attr] = CachedObject(
+                self.private_attributes[attr] = OldCachedObjec(
                     safegetattr(self.obj, attr),
                     parent_path=self.dotpath,
                     attr_name=attr,
@@ -232,11 +232,11 @@ class CachedObject:
                     continue
 
                 if not name.startswith("_"):
-                    self.public_attributes[name] = CachedObject(
+                    self.public_attributes[name] = OldCachedObjec(
                         module, parent_path=self.dotpath, attr_name=name, hidden=True
                     )
                 else:
-                    self.private_attributes[name] = CachedObject(
+                    self.private_attributes[name] = OldCachedObjec(
                         module, parent_path=self.dotpath, attr_name=name, hidden=True
                     )
 
@@ -248,13 +248,13 @@ class CachedObject:
     def set_filters(
         self, filters: List[Union[bool, Callable[[Any], Any]]], search_filter: str = ""
     ):
-        """ Reset the filters associated with this object, and rerun the filtering process again with the new filters """
+        """Reset the filters associated with this object, and rerun the filtering process again with the new filters"""
         self.filters = filters
         self.search_filter = search_filter.lower()
         self.filter()
 
     def filter(self):
-        """ Run the filters on all of this objects attributes """
+        """Run the filters on all of this objects attributes"""
         self.filtered_public_attributes = {}
         for attr, cached_obj in self.public_attributes.items():
             if self.search_filter not in attr.lower():
@@ -305,7 +305,7 @@ class CachedObject:
                 line = Text(" ") + repr_key + Text(": ") + repr_val
                 line.overflow = "ellipsis"
 
-                cached_obj = CachedObject(val, parent_path=self.dotpath, index=key)
+                cached_obj = OldCachedObjec(val, parent_path=self.dotpath, index=key)
 
                 if type(key) == str and self.search_filter not in key.lower():
                     continue
@@ -323,7 +323,7 @@ class CachedObject:
 
         self.num_filtered_dict_keys = len(self.filtered_dict)
 
-        self.filtered_list: List[Tuple[Text, CachedObject]] = []
+        self.filtered_list: List[Tuple[Text, OldCachedObjec]] = []
         if isinstance(self.obj, (list, tuple, set)):
             for index, item in enumerate(self.obj):
                 line = (
@@ -336,10 +336,10 @@ class CachedObject:
                     line.style += Style(dim=True)
 
                 self.filtered_list.append(
-                    (line, CachedObject(item, parent_path=self.dotpath, index=index))
+                    (line, OldCachedObjec(item, parent_path=self.dotpath, index=index))
                 )
             if self.filters:
-                new_filtered_list: List[Tuple[Text, CachedObject]] = []
+                new_filtered_list: List[Tuple[Text, OldCachedObjec]] = []
                 for line, cached_obj in self.filtered_list:
                     for _filter in self.filters:
                         if _filter(cached_obj):
@@ -349,7 +349,7 @@ class CachedObject:
         self.num_filtered_list_items = len(self.filtered_list)
 
     def current_visible_attributes(self):
-        """ TODO """
+        """TODO"""
         if self.filtered_dict:
             return self.filtered_dict
         elif self.filtered_list:
@@ -358,7 +358,7 @@ class CachedObject:
     def get_source(
         self, term_height: int = 0, fullscreen: bool = False
     ) -> Union[Syntax, str]:
-        """ TODO """
+        """TODO"""
         if not fullscreen and not term_height:
             raise ValueError("Need a terminal height")
 
@@ -381,10 +381,10 @@ class CachedObject:
 
 @dataclass
 class FilteredDictKey:
-    """ TODO """
+    """TODO"""
 
     text: Text
-    cached_object: CachedObject
+    cached_object: OldCachedObjec
 
     def __iter__(self):
         # return [self.text, self.cached_object]

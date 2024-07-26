@@ -4,8 +4,16 @@ from textual.widgets.option_list import Option
 
 
 class CachedObject:
-    def __init__(self, obj):
+    def __init__(self, obj, label="None"):
         self.obj = obj
+        self.label = label
+        self.docstring = inspect.getdoc(obj) or "None"
+
+        # Flags
+        self.isbool = isinstance(obj, bool)
+        self.ismodule = inspect.ismodule(obj)
+
+        # Children
 
         self.children_labels = dir(obj)
         self.children = {
@@ -24,7 +32,7 @@ class CachedObject:
 
     def cache(self):
         self.cached_children = {
-            label: CachedObject(child) for label, child in self.children.items()
+            label: CachedObject(child, label) for label, child in self.children.items()
         }
 
         self.public_children_options = {
