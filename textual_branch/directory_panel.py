@@ -51,9 +51,6 @@ class SearchableChildrenWidget(Static):
     def update_search_query(self, event: Input.Changed):
         self.query_one(ChildrenOptionList).search_query = event.value
 
-    def get_options(self):
-        return []
-
 
 class PrivateChildrenOptionList(ChildrenOptionList):
     def get_options(self):

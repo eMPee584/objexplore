@@ -25,6 +25,7 @@ class ObjectExplorer(App):
         ("/", "focus_search", "Search"),
         ("j", "cursor_down"),
         ("k", "cursor_up"),
+        ("l", "enter_object"),
     ]
 
     def __init__(self, *args, obj, **kwargs):
@@ -63,6 +64,19 @@ class ObjectExplorer(App):
         inspector = self.query_one(InspectedObjectWidget)
         inspector.cached_object = self.cached_object.cached_children[event.option.id]  # type: ignore
 
+    def action_enter_object(self):
+        option_list = (
+            self.query_one(DirectoryWidget)
+            .query_one(TabbedContent)
+            .active_pane.query_one(OptionList)
+        )
+
+        with self.app.suspend():
+            breakpoint()
+
+        self.cached_object = self.cached_object.cached_children[option_list.get_option_at_index(option_list.highlighted).id]  # type: ignore
+        self.cached_object.cache()
+
     def action_toggle_public_private(self):
         tabbed_content = self.query_one(TabbedContent)
 
@@ -81,6 +95,7 @@ class ObjectExplorer(App):
     def action_cursor_up(self) -> None:
         option_list: OptionList = self.query_one(DirectoryWidget).query_one(TabbedContent).active_pane.query_one(OptionList)  # type: ignore
         option_list.focus()
+
 
 if __name__ == "__main__":
     import pandas

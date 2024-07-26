@@ -1,6 +1,10 @@
 import inspect
 
+import rich
+from rich.pretty import Pretty
 from textual.widgets.option_list import Option
+
+console = rich.get_console()
 
 
 class CachedObject:
@@ -68,7 +72,10 @@ class CachedObject:
             return Option(f"[magenta]{child_label}[/]", id=child_label)
 
         elif inspect.ismodule(child_object):
-            return Option(f"[blue]{child_label}[/]", id=child_label)
+            return Option(
+                f"<[blue]{child_label}[/]>",
+                id=child_label,
+            )
 
         elif inspect.ismethod(child_object) or inspect.isfunction(child_object):
             return Option(f"[cyan]{child_label}[/cyan]()", id=child_label)
