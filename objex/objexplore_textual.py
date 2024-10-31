@@ -2,10 +2,11 @@ import inspect
 from typing import Any, List, Optional
 
 import rich
+from new_cached_object import NewCachedChildObject, NewCachedObject
 from rich.console import Console
 from rich.style import Style
 
-import objex
+import textual
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.driver import Driver
@@ -23,8 +24,6 @@ from textual.widgets import (
     TabPane,
 )
 from textual.widgets.option_list import Option, Separator
-
-from .new_cached_object import NewCachedChildObject, NewCachedObject
 
 console = rich.get_console()
 
@@ -167,7 +166,7 @@ class ChildrenWidget(Static):
 
     def compose(self):
         for cached_child in self.cached_children:
-            if self.search_query.lower() in cached_child.lower():
+            if self.search_query.lower() in cached_child.label.lower():
                 yield ChildWidget(
                     parent_cached_object=self.parent_cached_object,
                     cached_child=cached_child,
@@ -243,7 +242,7 @@ class SearchableChildrenWidget(Static):
                 cached_children=self.get_child_labels(),
             )
 
-    @objex.on(Input.Changed)
+    @textual.on(Input.Changed)
     def update_search_query(self, event: Input.Changed):
         self.query_one(ChildrenWidget).search_query = event.value
 
