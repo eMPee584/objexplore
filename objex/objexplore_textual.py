@@ -4,6 +4,7 @@ from typing import Any, List, Optional
 import rich
 import textual
 from new_cached_object import NewCachedChildObject, NewCachedObject
+from rich import color
 from rich.console import Console
 from rich.panel import Panel
 from rich.style import Style
@@ -15,6 +16,7 @@ from textual.widgets import Input as TextualInput
 from textual.widgets import (
     Label,
     OptionList,
+    Placeholder,
     Pretty,
     Static,
     Switch,
@@ -23,6 +25,7 @@ from textual.widgets import (
 )
 
 console = rich.get_console()
+
 
 def get_inspect(
     obj: Any,
@@ -122,32 +125,16 @@ class ChildWidget(Static):
         self.styles.height = "auto"
 
     def render(self):
-        return Panel(self.cached_child.label, title=self.cached_child.repr_type,)
+        return Panel(
+            renderable=self.cached_child.label,
+            title=self.cached_child.title_str,
+            title_align="left",
+            border_style=self.cached_child.style,
+        )
 
-    # def compose(self):
-    #     yield MyLabel(self.cached_child.label)
-        # yield Static(get_inspect(self.cached_child.obj))
-
-
-        # actual_child_object = getattr(self.parent_object, self.child_label)
-
-        # with Horizontal() as h:
-        #     h.styles.height = "auto"
-        #     with Vertical() as v:
-        #         v.styles.height = "auto"
-        #         v.styles.width = "25%"
-        #         v.styles.align = ("right", "middle")
-        #         v.styles.text_style = Style(bold=True, italic=True)
-        #         label = Label(self.child_label)
-        #         label.styles.margin = 1
-        #         yield label
-
-        #     with Vertical() as v:
-        #         v.styles.height = "3"
-        #         v.styles.border = ("round", "green")
-        #         yield Static("hello")
-        #         # pretty = Pretty(actual_child_object)
-        #         # yield pretty
+    def on_enter(self):
+        self.cached_child.cache()
+        self.app.query_one(InspectedObjectWidget).selected_object = self.cached_child
 
 
 class ChildrenWidget(Static):
@@ -184,61 +171,6 @@ class ChildrenWidget(Static):
                     cached_child=cached_child,
                 )
 
-        # yield OptionList(
-        #     *[
-        #         self.get_option_for_child(child_label)
-        #         for child_label in self.child_labels
-        #         if self.search_query.lower() in child_label.lower()
-        #     ],
-        #     wrap=False,
-        # )
-
-
-#     def action_cursor_down(self) -> None:
-#         return self.query_one(OptionList).action_cursor_down()
-
-#     def action_cursor_up(self) -> None:
-#         return self.query_one(OptionList).action_cursor_up()
-
-# def get_option_for_child(self, child_label):
-#     child_object = getattr(self.parent_object, child_label)
-
-#     if child_object is None:
-#         return Option(f"[strike][dim]{child_label}[/]", id=child_label)
-
-#     elif inspect.isclass(child_object):
-#         return Option(f"[magenta]{child_label}[/]", id=child_label)
-
-#     elif inspect.ismodule(child_object):
-#         return Option(f"[blue]{child_label}[/]", id=child_label)
-
-#     elif inspect.ismethod(child_object) or inspect.isfunction(child_object):
-#         return Option(f"[cyan]{child_label}[/cyan]()", id=child_label)
-
-#     elif isinstance(child_object, dict):
-#         return Option("{**[cyan]" + child_label + "[/]}", id=child_label)
-
-#     elif isinstance(child_object, bool):
-#         color = "green" if child_object else "red"
-#         return Option(
-#             f"{child_label} = [{color}][i]{child_object}[/i][/{color}]",
-#             id=child_label,
-#         )
-
-#     elif isinstance(child_object, str):
-#         return Option(
-#             f"{child_label} = [green][i]'{child_object}'[/i][/green]",
-#             id=child_label,
-#         )
-
-#     elif isinstance(child_object, list):
-#         return Option(
-#             "[*" + f"[red]{child_label}[/red]" + "]",
-#             id=child_label,
-#         )
-
-#     return Option(child_label, id=child_label)
-
 
 class SearchableChildrenWidget(Static):
 
@@ -254,9 +186,9 @@ class SearchableChildrenWidget(Static):
                 cached_children=self.get_child_labels(),
             )
 
-    @textual.on(Input.Changed)
+    @textual.on(message_type=Input.Changed)
     def update_search_query(self, event: Input.Changed):
-        self.query_one(ChildrenWidget).search_query = event.value
+        self.query_one(selector=ChildrenWidget).search_query = event.value
 
     def get_child_labels(self):
         return []
@@ -265,30 +197,14 @@ class SearchableChildrenWidget(Static):
 class PublicChildrenWidget(SearchableChildrenWidget):
     def get_child_labels(self):
         return self.cached_obj.public_children
-        # return [
-        #     child_label
-        #     for child_label in dir(self.cached_obj)
-        #     if not child_label.startswith("_")
-        # ]
 
 
 class PrivateChildrenWidget(SearchableChildrenWidget):
     def get_child_labels(self):
         return self.cached_obj.private_children
-        # return [
-        #     child_label
-        #     for child_label in dir(self.cached_obj)
-        #     if child_label.startswith("_")
-        # ]
 
 
 class DirectoryWidget(Static):
-    DEFAULT_CSS = """
-    DirectoryWidget {
-        border: round white
-    }
-    """
-
     def __init__(self, cached_obj: NewCachedObject, *args, **kwargs):
         self.cached_obj = cached_obj
         super().__init__(*args, **kwargs)
@@ -363,27 +279,9 @@ class InspectedObjectWidget(Static):
     selected_object = reactive(None, recompose=True)
 
     def compose(self):
-        with Horizontal() as h:
-            h.styles.height = "3"
-            with Vertical():
-                label = Label(self.selected_object_label)
-                label.styles.border = ("round", "cyan")
-                label.border_title = "Name"
-                label.styles.border_title_color = "white"
-                label.styles.border_title_style = Style(italic=True)
-                label.styles.width = "100%"
-                yield label
-
-            with Vertical():
-                _type = Pretty(type(self.selected_object))
-                _type.styles.border = ("round", "cyan")
-                _type.border_title = "Type"
-                _type.styles.border_title_color = "white"
-                _type.styles.border_title_style = Style(italic=True)
-                yield _type
-
-        with VerticalScroll():
-            yield PreviewWidget(selected_object=self.selected_object)
+        if self.selected_object:
+            with VerticalScroll():
+                yield InspectWidget(obj=self.selected_object.obj)
 
 
 class ObjectExplorer(App):
@@ -412,7 +310,7 @@ class ObjectExplorer(App):
                 v.styles.width = "30%"
                 yield DirectoryWidget(cached_obj=self.cached_obj)
 
-            with Vertical(classes="column"):
+            with Vertical(classes="column") as v:
                 yield InspectedObjectWidget()
 
         yield Footer()
@@ -438,18 +336,19 @@ class ObjectExplorer(App):
         else:
             tabbed_content.active = "public"
 
-    def action_focus_search(self):
-        self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
-    def action_cursor_down(self) -> None:
-        self.query_one(TabbedContent).active_pane.query_one(
-            OptionList
-        ).action_cursor_down()
+#     def action_focus_search(self):
+#         self.query_one(TabbedContent).active_pane.query_one(Input).focus()
 
-    def action_cursor_up(self) -> None:
-        self.query_one(TabbedContent).active_pane.query_one(
-            OptionList
-        ).action_cursor_down()
+#     def action_cursor_down(self) -> None:
+#         self.query_one(TabbedContent).active_pane.query_one(
+#             OptionList
+#         ).action_cursor_down()
+
+#     def action_cursor_up(self) -> None:
+#         self.query_one(TabbedContent).active_pane.query_one(
+#             OptionList
+#         ).action_cursor_down()
 
 
 if __name__ == "__main__":
