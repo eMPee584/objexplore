@@ -21,17 +21,16 @@ class NewCachedChildObject:
 
         self.style = self._get_style()
         self.title = self._get_title()
-        self.subtitle = self._get_subtitle()
 
     def _get_style(self):
         if self.is_class:
-            return Style(color="blue")
+            return Style(color="cyan")
 
         elif self.is_callable:
             return Style(color="green")
 
         elif self.is_module:
-            return Style(color="purple")
+            return Style(color="blue")
 
         else:
             return Style(color="white")
@@ -39,9 +38,6 @@ class NewCachedChildObject:
     def _get_title(self) -> Text:
         name = type(self.obj).__name__
         return Text(text=name, style=self.style)
-
-    def _get_subtitle(self):
-        return highlighter(str(type(self.obj)))
 
     def cache(self):
         if self.cached_obj:

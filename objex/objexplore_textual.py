@@ -130,8 +130,6 @@ class ChildWidget(Static):
             renderable=self.cached_child.name,
             title=self.cached_child.title,
             title_align="left",
-            subtitle=self.cached_child.subtitle,
-            subtitle_align="right",
             border_style=self.cached_child.style,
         )
 
