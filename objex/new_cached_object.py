@@ -1,8 +1,15 @@
+
+
+from rich.highlighter import ReprHighlighter
+
+highlighter = ReprHighlighter()
+
 class NewCachedChildObject:
     def __init__(self, obj, label, parent):
         self.obj = obj
         self.label = label
         self.parent = parent
+        self.repr_type = highlighter(str(type(obj)))
 
 
 class NewCachedObject:
@@ -19,3 +26,4 @@ class NewCachedObject:
         self.private_children = [
             child for child in self.all_children if child.label.startswith("_")
         ]
+        

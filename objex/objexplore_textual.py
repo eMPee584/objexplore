@@ -2,17 +2,15 @@ import inspect
 from typing import Any, List, Optional
 
 import rich
+import textual
 from new_cached_object import NewCachedChildObject, NewCachedObject
 from rich.console import Console
+from rich.panel import Panel
 from rich.style import Style
-
-import textual
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.driver import Driver
-from textual.events import Enter, Leave
 from textual.reactive import reactive
-from textual.widgets import Button, Footer, Header
+from textual.widgets import Footer, Header
 from textual.widgets import Input as TextualInput
 from textual.widgets import (
     Label,
@@ -23,10 +21,8 @@ from textual.widgets import (
     TabbedContent,
     TabPane,
 )
-from textual.widgets.option_list import Option, Separator
 
 console = rich.get_console()
-
 
 def get_inspect(
     obj: Any,
@@ -101,12 +97,12 @@ class MyLabel(Static):
         self.text = text
 
     def render(self):
-        return self.text
+        return Panel(self.text)
 
 
 class ChildWidget(Static):
     DEFAULT_CSS = """
-    ChildWidget > MyLabel:hover {
+    ChildWidget:hover {
         background: $primary-background-darken-1;
     }
     """
@@ -125,8 +121,14 @@ class ChildWidget(Static):
     def on_mount(self):
         self.styles.height = "auto"
 
-    def compose(self):
-        yield MyLabel(self.cached_child.label)
+    def render(self):
+        return Panel(self.cached_child.label, title=self.cached_child.repr_type,)
+
+    # def compose(self):
+    #     yield MyLabel(self.cached_child.label)
+        # yield Static(get_inspect(self.cached_child.obj))
+
+
         # actual_child_object = getattr(self.parent_object, self.child_label)
 
         # with Horizontal() as h:
