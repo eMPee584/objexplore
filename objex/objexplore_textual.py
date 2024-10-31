@@ -174,6 +174,7 @@ class ChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
+        yield Label()
         for cached_child in self.cached_children:
             if self.search_query.lower() in cached_child.label.lower():
                 yield ChildWidget(
@@ -280,16 +281,22 @@ class PrivateChildrenWidget(SearchableChildrenWidget):
 
 
 class DirectoryWidget(Static):
+    DEFAULT_CSS = """
+    DirectoryWidget {
+        border: round white
+    }
+    """
+
     def __init__(self, cached_obj: NewCachedObject, *args, **kwargs):
         self.cached_obj = cached_obj
         super().__init__(*args, **kwargs)
 
     def compose(self):
         with TabbedContent():
-            with TabPane("Public", id="public"):
+            with TabPane(title="Public", id="public"):
                 yield PublicChildrenWidget(cached_obj=self.cached_obj)
 
-            with TabPane("Private", id="private"):
+            with TabPane(title="Private", id="private"):
                 yield PrivateChildrenWidget(cached_obj=self.cached_obj)
 
 
