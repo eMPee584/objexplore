@@ -18,6 +18,7 @@ from textual.widgets import (
     OptionList,
     Placeholder,
     Pretty,
+    Rule,
     Static,
     Switch,
     TabbedContent,
@@ -126,9 +127,11 @@ class ChildWidget(Static):
 
     def render(self):
         return Panel(
-            renderable=self.cached_child.label,
-            title=self.cached_child.title_str,
+            renderable=self.cached_child.name,
+            title=self.cached_child.title,
             title_align="left",
+            subtitle=self.cached_child.subtitle,
+            subtitle_align="right",
             border_style=self.cached_child.style,
         )
 
@@ -163,9 +166,8 @@ class ChildrenWidget(Static):
         super().__init__(*args, **kwargs)
 
     def compose(self):
-        yield Label()
         for cached_child in self.cached_children:
-            if self.search_query.lower() in cached_child.label.lower():
+            if self.search_query.lower() in cached_child.name.lower():
                 yield ChildWidget(
                     parent_cached_object=self.parent_cached_object,
                     cached_child=cached_child,
@@ -180,7 +182,8 @@ class SearchableChildrenWidget(Static):
 
     def compose(self):
         yield Input(placeholder="Search Attributes")
-        with VerticalScroll():
+        yield Label()
+        with VerticalScroll() as v:
             yield ChildrenWidget(
                 parent_cached_object=self.cached_obj,
                 cached_children=self.get_child_labels(),

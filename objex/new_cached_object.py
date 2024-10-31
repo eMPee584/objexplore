@@ -8,9 +8,9 @@ highlighter = ReprHighlighter()
 
 
 class NewCachedChildObject:
-    def __init__(self, obj, label, parent):
+    def __init__(self, obj, name, parent):
         self.obj = obj
-        self.label = label
+        self.name = name
         self.parent = parent
         self.cached_obj = None
 
@@ -19,21 +19,29 @@ class NewCachedChildObject:
         self.is_callable = callable(obj)
         self.is_module = ismodule(obj)
 
+        self.style = self._get_style()
+        self.title = self._get_title()
+        self.subtitle = self._get_subtitle()
+
+    def _get_style(self):
         if self.is_class:
-            self.style = Style(color="blue")
-            self.title_str = Text("class", style=self.style)
+            return Style(color="blue")
 
         elif self.is_callable:
-            self.style = Style(color="green")
-            self.title_str = Text("callable", style=self.style)
+            return Style(color="green")
 
         elif self.is_module:
-            self.style = Style(color="cyan")
-            self.title_str = Text("module", style=self.style)
+            return Style(color="purple")
 
         else:
-            self.style = Style(color="white")
-            self.title_str = Text("object", style=self.style)
+            return Style(color="white")
+
+    def _get_title(self) -> Text:
+        name = type(self.obj).__name__
+        return Text(text=name, style=self.style)
+
+    def _get_subtitle(self):
+        return highlighter(str(type(self.obj)))
 
     def cache(self):
         if self.cached_obj:
@@ -50,8 +58,8 @@ class NewCachedObject:
             for child_label in dir(obj)
         ]
         self.public_children = [
-            child for child in self.all_children if not child.label.startswith("_")
+            child for child in self.all_children if not child.name.startswith("_")
         ]
         self.private_children = [
-            child for child in self.all_children if child.label.startswith("_")
+            child for child in self.all_children if child.name.startswith("_")
         ]
