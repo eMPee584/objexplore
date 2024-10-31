@@ -95,9 +95,18 @@ class InspectWidget(Static):
         super().__init__(get_inspect(obj), **kwargs)
 
 
+class MyLabel(Static):
+    def __init__(self, text, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.text = text
+
+    def render(self):
+        return self.text
+
+
 class ChildWidget(Static):
     DEFAULT_CSS = """
-    ChildWidget > * > *:hover {
+    ChildWidget > MyLabel:hover {
         background: $primary-background-darken-1;
     }
     """
@@ -117,7 +126,7 @@ class ChildWidget(Static):
         self.styles.height = "auto"
 
     def compose(self):
-        yield Label(self.cached_child.label)
+        yield MyLabel(self.cached_child.label)
         # actual_child_object = getattr(self.parent_object, self.child_label)
 
         # with Horizontal() as h:
