@@ -3,6 +3,7 @@ from typing import List
 import textual
 from new_cached_object import NewCachedChildObject, NewCachedObject
 from rich.panel import Panel
+from rich.text import Text
 from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Input as TextualInput
@@ -12,8 +13,12 @@ from widgets.preview_widgets import InspectedObjectWidget
 
 class ChildWidget(Static):
     DEFAULT_CSS = """
-    ChildWidget:hover {
-        background: $primary-background-darken-1;
+    ChildWidget {
+        max-height: 3;
+
+        & :hover {
+            background: $primary-background-darken-1;
+        }
     }
     """
 
@@ -24,20 +29,25 @@ class ChildWidget(Static):
         *args,
         **kwargs,
     ):
+        super().__init__(*args, **kwargs)
         self.parent_cached_object = parent_cached_object
         self.cached_child = cached_child
-        super().__init__(*args, **kwargs)
 
     def on_mount(self):
         self.styles.height = "auto"
+        self.styles.border = ("round", self.cached_child.style_color)
+        self.border_title = self.cached_child.title
 
-    def render(self):
-        return Panel(
-            renderable=self.cached_child.name,
-            title=self.cached_child.title,
-            title_align="left",
-            border_style=self.cached_child.style,
-        )
+    def render(self) -> Text:
+        return self.cached_child.str_repr
+
+    # def render(self) -> Panel:
+    #     return Panel(
+    #         renderable=self.cached_child.name,
+    #         title=self.cached_child.title,
+    #         title_align="left",
+    #         border_style=self.cached_child.style,
+    #     )
 
     def on_enter(self):
         self.cached_child.cache()

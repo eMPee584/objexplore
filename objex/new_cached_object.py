@@ -27,23 +27,28 @@ class NewCachedChildObject:
         except Exception:
             self.signature = None
 
-        self.style = self._get_style()
-        self.title = self._get_title()
+        self.str_repr = self._get_str_repr()
+        self.style, self.style_color = self._get_style()
+        self.title = self.name
+        self.subtitle = self._get_subtitle()
+
+    def _get_str_repr(self):
+        return highlighter(repr(self.obj))
 
     def _get_style(self):
         if self.is_class:
-            return Style(color="cyan")
+            return Style(color="cyan"), "ansi_cyan"
 
         elif self.is_callable:
-            return Style(color="green")
+            return Style(color="green"), "ansi_green"
 
         elif self.is_module:
-            return Style(color="blue")
+            return Style(color="blue"), "ansi_magenta"
 
         else:
-            return Style(color="white")
+            return Style(color="white"), "ansi_white"
 
-    def _get_title(self) -> Text:
+    def _get_subtitle(self) -> Text:
         name = type(self.obj).__name__
         return Text(text=name, style=self.style)
 

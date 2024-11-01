@@ -67,7 +67,7 @@ def get_inspect(
 
 class InspectWidget(Static):
     def __init__(self, obj, **kwargs):
-        super().__init__(get_inspect(obj), **kwargs)
+        super().__init__(renderable=get_inspect(obj), **kwargs)
         self.obj = obj
 
 
@@ -100,12 +100,12 @@ class InspectedObjectWidget(Static):
     """
     selected_object_label = reactive(default="")
     selected_object: reactive[Optional[NewCachedChildObject]] = reactive(
-        None, recompose=True
+        default=None, recompose=True
     )
 
     def compose(self):
         if self.selected_object:
             with VerticalScroll() as v:
-                v.styles.border = ("round", "white")
+                v.styles.border = ("round", str(self.selected_object.style.color.name))
                 v.border_title = self.selected_object.name
                 yield DocstringWidget(docstring=self.selected_object.docstring)
