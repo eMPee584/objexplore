@@ -50,7 +50,7 @@ class NewCachedChildObject:
 
     def _get_subtitle(self) -> Text:
         name = type(self.obj).__name__
-        return Text(text=name, style=self.style)
+        return Text(text=name)
 
     def cache(self):
         if self.cached_obj:

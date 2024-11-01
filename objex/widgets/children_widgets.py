@@ -37,17 +37,10 @@ class ChildWidget(Static):
         self.styles.height = "auto"
         self.styles.border = ("round", self.cached_child.style_color)
         self.border_title = self.cached_child.title
+        self.border_subtitle = self.cached_child.subtitle
 
     def render(self) -> Text:
         return self.cached_child.str_repr
-
-    # def render(self) -> Panel:
-    #     return Panel(
-    #         renderable=self.cached_child.name,
-    #         title=self.cached_child.title,
-    #         title_align="left",
-    #         border_style=self.cached_child.style,
-    #     )
 
     def on_enter(self):
         self.cached_child.cache()
@@ -68,7 +61,7 @@ class ChildrenWidget(Static):
         ("k", "cursor_up"),
     ]
 
-    search_query = reactive("", recompose=True)
+    search_query = reactive(default="", recompose=True)
 
     def __init__(
         self,
