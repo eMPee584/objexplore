@@ -19,6 +19,14 @@ class NewCachedChildObject:
         self.is_callable = callable(obj)
         self.is_module = ismodule(obj)
 
+        # Metadata
+        self.docstring = getdoc(obj)
+        # self.file = getfile(obj)
+        try:
+            self.signature = signature(obj)
+        except Exception:
+            self.signature = None
+
         self.style = self._get_style()
         self.title = self._get_title()
 
@@ -42,7 +50,7 @@ class NewCachedChildObject:
     def cache(self):
         if self.cached_obj:
             return
-        self.cached_obj = NewCachedObject(self.obj)
+        self.cached_obj = NewCachedObject(obj=self.obj)
 
 
 class NewCachedObject:
