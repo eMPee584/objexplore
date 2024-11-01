@@ -1,10 +1,14 @@
 from inspect import cleandoc, getdoc, getfile, isclass, ismodule, signature
 
+from rich._inspect import Inspect
+from rich.console import Console
 from rich.highlighter import ReprHighlighter
+from rich.pretty import Pretty, pretty_repr
 from rich.style import Style
 from rich.text import Text
 
 highlighter = ReprHighlighter()
+console = Console()
 
 
 class NewCachedChildObject:
@@ -15,38 +19,47 @@ class NewCachedChildObject:
         self.cached_obj = None
 
         # Flags
-        self.is_class = isclass(obj)
-        self.is_callable = callable(obj)
-        self.is_module = ismodule(obj)
+        self.isclass = isclass(obj)
+        self.iscallable = callable(obj)
+        self.ismodule = ismodule(obj)
 
         # Metadata
-        self.docstring = getdoc(obj)
-        # self.file = getfile(obj)
+        self.inspect = Inspect(obj=obj)
+        self.docstring = self.inspect._get_formatted_doc(obj)
+        try:
+            self.file = getfile(obj)
+        except Exception:
+            self.file = None
         try:
             self.signature = signature(obj)
         except Exception:
             self.signature = None
 
         self.str_repr = self._get_str_repr()
-        self.style, self.style_color = self._get_style()
+        self.style_color = self._get_style_color()
         self.title = self.name
         self.subtitle = self._get_subtitle()
 
     def _get_str_repr(self):
-        return highlighter(repr(self.obj))
+        signature = self.inspect._get_signature(self.name, self.obj)
+        if signature:
+            return signature
 
-    def _get_style(self):
-        if self.is_class:
-            return Style(color="cyan"), "ansi_cyan"
+        pretty = Pretty(self.obj, max_length=1, overflow="ellipsis")
+        return pretty
 
-        elif self.is_callable:
-            return Style(color="green"), "ansi_green"
+    def _get_style_color(self):
+        if self.isclass:
+            return "ansi_cyan"
 
-        elif self.is_module:
-            return Style(color="blue"), "ansi_magenta"
+        elif self.iscallable:
+            return "ansi_green"
+
+        elif self.ismodule:
+            return "ansi_magenta"
 
         else:
-            return Style(color="white"), "ansi_white"
+            return "grey"
 
     def _get_subtitle(self) -> Text:
         name = type(self.obj).__name__

@@ -1,14 +1,18 @@
 from typing import List
 
+import rich
 import textual
 from new_cached_object import NewCachedChildObject, NewCachedObject
 from rich.panel import Panel
+from rich.pretty import Pretty as RichPretty
 from rich.text import Text
 from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Input as TextualInput
-from textual.widgets import Label, Static
+from textual.widgets import Label, Pretty, Static
 from widgets.preview_widgets import InspectedObjectWidget
+
+console = rich.get_console()
 
 
 class ChildWidget(Static):
@@ -35,12 +39,17 @@ class ChildWidget(Static):
 
     def on_mount(self):
         self.styles.height = "auto"
-        self.styles.border = ("round", self.cached_child.style_color)
+        style_color = self.cached_child.style_color
+        self.styles.border = ("round", style_color)
         self.border_title = self.cached_child.title
         self.border_subtitle = self.cached_child.subtitle
 
-    def render(self) -> Text:
-        return self.cached_child.str_repr
+    def render(self) -> Text | RichPretty:
+        str_repr = self.cached_child.str_repr
+        if console.measure(str_repr).minimum > console.width * 0.3:
+            return "{...}"
+        else:
+            return str_repr
 
     def on_enter(self):
         self.cached_child.cache()

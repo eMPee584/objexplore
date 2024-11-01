@@ -6,8 +6,6 @@ from textual.widgets import Footer, Header, TabbedContent
 from widgets.directory_widget import DirectoryWidget
 from widgets.preview_widgets import InspectedObjectWidget
 
-console = rich.get_console()
-
 
 class ObjectExplorer(App):
     """A Textual app to manage stopwatches."""
@@ -46,7 +44,7 @@ class ObjectExplorer(App):
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
-        self.dark = not self.dark
+        self.app.dark = not self.app.dark
 
     def action_toggle_public_private(self):
         tabbed_content = self.query_one(selector=TabbedContent)

@@ -1,4 +1,3 @@
-import inspect
 from typing import Any, Optional
 
 import rich
@@ -106,6 +105,7 @@ class InspectedObjectWidget(Static):
     def compose(self):
         if self.selected_object:
             with VerticalScroll() as v:
-                v.styles.border = ("round", str(self.selected_object.style.color.name))
+                v.styles.border = ("round", self.selected_object.style_color)
                 v.border_title = self.selected_object.name
                 yield DocstringWidget(docstring=self.selected_object.docstring)
+                yield InspectWidget(obj=self.selected_object.obj)
