@@ -76,6 +76,8 @@ class NewCachedObject:
         self.obj = obj
         self.name = name
 
+        self.cached_children = []
+
         # Flags
         self.isclass = isclass(obj)
         self.iscallable = callable(obj)
@@ -135,7 +137,8 @@ class NewCachedObject:
         name = type(self.obj).__name__
         return Text(text=name)
 
-    def cache(self):
-        if self.cached_obj:
-            return
-        self.cached_obj = NewCachedObject(obj=self.obj)
+    def cache_children(self):
+        self.cached_children = [
+            NewCachedObject(obj=getattr(self.obj, child), name=child)
+            for child in dir(self.obj)
+        ]

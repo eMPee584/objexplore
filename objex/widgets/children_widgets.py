@@ -28,67 +28,51 @@ class ChildWidget(Static):
 
     def __init__(
         self,
-        parent_cached_object: NewCachedObject,
-        cached_child: NewCachedChildObject,
+        cached_object: NewCachedObject,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.parent_cached_object = parent_cached_object
-        self.cached_child = cached_child
+        self.cached_object = cached_object
 
     def on_mount(self):
         self.styles.height = "auto"
-        style_color = self.cached_child.style_color
+        style_color = self.cached_object.style_color
         self.styles.border = ("round", style_color)
-        self.border_title = self.cached_child.title
-        self.border_subtitle = self.cached_child.subtitle
+        self.border_title = self.cached_object.title
+        self.border_subtitle = self.cached_object.subtitle
 
-    def render(self) -> Text | RichPretty:
-        str_repr = self.cached_child.str_repr
+    def render(self):
+        str_repr = self.cached_object.str_repr
         if console.measure(str_repr).minimum > console.width * 0.3:
             return "{...}"
         else:
             return str_repr
 
-    def on_enter(self):
-        self.cached_child.cache()
-        self.app.query_one(selector=InspectedObjectWidget).selected_object = (
-            self.cached_child
-        )
-
 
 class ChildrenWidget(Static):
-    DEFAULT_CSS = """
-    ChildrenWidget > OptionList:focus > .option-list--option-highlighted {
-        text-style: reverse
-    }
-    """
+
+    search_query = reactive(default="", recompose=True)
 
     BINDINGS = [
         ("j", "cursor_down"),
         ("k", "cursor_up"),
     ]
 
-    search_query = reactive(default="", recompose=True)
-
     def __init__(
         self,
-        parent_cached_object: NewCachedObject,
-        cached_children: List[NewCachedChildObject],
+        cached_object: NewCachedObject,
         *args,
         **kwargs,
     ):
-        self.parent_cached_object = parent_cached_object
-        self.cached_children = cached_children
         super().__init__(*args, **kwargs)
+        self.cached_object = cached_object
 
     def compose(self):
-        for cached_child in self.cached_children:
+        for cached_child in self.cached_object.cached_children:
             if self.search_query.lower() in cached_child.name.lower():
                 yield ChildWidget(
-                    parent_cached_object=self.parent_cached_object,
-                    cached_child=cached_child,
+                    cached_object=cached_child,
                 )
 
 
@@ -101,22 +85,16 @@ class Input(TextualInput):
 
 class SearchableChildrenWidget(Static):
 
-    def __init__(self, cached_object, *args, **kwargs):
-        self.cached_obj = cached_object
+    def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.cached_object = cached_object
 
     def compose(self):
         yield Input(placeholder="Search Attributes")
         yield Label()
         with VerticalScroll() as v:
-            yield ChildrenWidget(
-                parent_cached_object=self.cached_obj,
-                cached_children=self.get_child_labels(),
-            )
+            yield ChildrenWidget(cached_object=self.cached_object)
 
     @textual.on(message_type=Input.Changed)
     def update_search_query(self, event: Input.Changed):
         self.query_one(selector=ChildrenWidget).search_query = event.value
-
-    def get_child_labels(self):
-        return self.cached_obj.all_children

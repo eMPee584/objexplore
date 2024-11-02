@@ -1,8 +1,9 @@
+import textual
 from new_cached_object import NewCachedObject
 from rich.text import Text
 from textual.events import Mount
 from textual.widgets import Static, TabbedContent, TabPane
-from widgets.children_widgets import SearchableChildrenWidget
+from widgets.children_widgets import Input, SearchableChildrenWidget
 
 
 class DirectoryWidget(Static):
