@@ -1,17 +1,19 @@
 from new_cached_object import NewCachedObject
+from rich.text import Text
+from textual.events import Mount
 from textual.widgets import Static, TabbedContent, TabPane
-from widgets.children_widgets import PrivateChildrenWidget, PublicChildrenWidget
+from widgets.children_widgets import SearchableChildrenWidget
 
 
 class DirectoryWidget(Static):
-    def __init__(self, cached_obj: NewCachedObject, *args, **kwargs):
-        self.cached_obj = cached_obj
+    def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.cached_object = cached_object
+
+    def _on_mount(self, event: Mount) -> None:
+        self.styles.border = ("round", "white")
+        self.border_title = Text.from_markup("[cyan][i]dir[/cyan][white]()")
+        self.styles.border_title_align = "right"
 
     def compose(self):
-        with TabbedContent():
-            with TabPane(title="Public", id="public"):
-                yield PublicChildrenWidget(cached_obj=self.cached_obj)
-
-            with TabPane(title="Private", id="private"):
-                yield PrivateChildrenWidget(cached_obj=self.cached_obj)
+        yield SearchableChildrenWidget(cached_object=self.cached_object)

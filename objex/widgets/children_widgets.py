@@ -101,8 +101,8 @@ class Input(TextualInput):
 
 class SearchableChildrenWidget(Static):
 
-    def __init__(self, cached_obj, *args, **kwargs):
-        self.cached_obj = cached_obj
+    def __init__(self, cached_object, *args, **kwargs):
+        self.cached_obj = cached_object
         super().__init__(*args, **kwargs)
 
     def compose(self):
@@ -119,14 +119,4 @@ class SearchableChildrenWidget(Static):
         self.query_one(selector=ChildrenWidget).search_query = event.value
 
     def get_child_labels(self):
-        return []
-
-
-class PublicChildrenWidget(SearchableChildrenWidget):
-    def get_child_labels(self):
-        return self.cached_obj.public_children
-
-
-class PrivateChildrenWidget(SearchableChildrenWidget):
-    def get_child_labels(self):
-        return self.cached_obj.private_children
+        return self.cached_obj.all_children

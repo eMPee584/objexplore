@@ -21,8 +21,8 @@ class ObjectExplorer(App):
     ]
 
     def __init__(self, *args, obj, **kwargs):
-        self.cached_obj = NewCachedObject(obj)
         super().__init__(*args, **kwargs)
+        self.cached_object = NewCachedObject(obj)
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
@@ -31,7 +31,7 @@ class ObjectExplorer(App):
         with Horizontal():
             with Vertical(classes="column") as v:
                 v.styles.width = "30%"
-                yield DirectoryWidget(cached_obj=self.cached_obj)
+                yield DirectoryWidget(cached_object=self.cached_object)
 
             with Vertical(classes="column") as v:
                 yield InspectedObjectWidget()
@@ -45,25 +45,6 @@ class ObjectExplorer(App):
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
         self.app.dark = not self.app.dark
-
-    def action_toggle_public_private(self):
-        tabbed_content = self.query_one(selector=TabbedContent)
-
-        if tabbed_content.active == "public":
-            tabbed_content.active = "private"
-        else:
-            tabbed_content.active = "public"
-
-
-#     def action_cursor_down(self) -> None:
-#         self.query_one(TabbedContent).active_pane.query_one(
-#             OptionList
-#         ).action_cursor_down()
-
-#     def action_cursor_up(self) -> None:
-#         self.query_one(TabbedContent).active_pane.query_one(
-#             OptionList
-#         ).action_cursor_down()
 
 
 if __name__ == "__main__":
