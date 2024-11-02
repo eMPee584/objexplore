@@ -5,14 +5,23 @@ import textual
 from new_cached_object import NewCachedChildObject, NewCachedObject
 from rich.panel import Panel
 from rich.pretty import Pretty as RichPretty
+from rich.style import Style
 from rich.text import Text
 from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Input as TextualInput
-from textual.widgets import Label, Pretty, Static
+from textual.widgets import Label, Pretty, SelectionList, Static
+from textual.widgets.selection_list import Selection
 from widgets.preview_widgets import InspectedObjectWidget
 
 console = rich.get_console()
+
+
+class Input(TextualInput):
+    BINDINGS = [("escape", "leave_focus")]
+
+    def action_leave_focus(self):
+        self.blur()
 
 
 class ChildWidget(Static):
@@ -44,7 +53,10 @@ class ChildWidget(Static):
 
     def render(self):
         str_repr = self.cached_object.str_repr
-        if console.measure(str_repr).minimum > console.width * 0.3:
+        if (
+            isinstance(self.cached_object.obj, dict)
+            and console.measure(str_repr).minimum > console.width * 0.3
+        ):
             return "{...}"
         else:
             return str_repr
@@ -76,11 +88,32 @@ class ChildrenWidget(Static):
                 )
 
 
-class Input(TextualInput):
-    BINDINGS = [("escape", "leave_focus")]
+from textual.screen import Screen
 
-    def action_leave_focus(self):
-        self.blur()
+
+class FilterScreen(Screen):
+    def compose(self):
+        yield SelectionList[str](
+            Selection("int", "int"),
+            Selection("str", "str"),
+        )
+
+
+class FiltersWidget(Static):
+
+    # DEFAULT_CSS = """
+    # FiltersWidget {
+    #     &:hover {
+    #         rule: reverse
+    #     }
+    # }
+    # """
+
+    def compose(self):
+        yield Label("Filters")
+
+    def on_click(self, event):
+        self.app.push_screen(FilterScreen())
 
 
 class SearchableChildrenWidget(Static):
@@ -91,7 +124,7 @@ class SearchableChildrenWidget(Static):
 
     def compose(self):
         yield Input(placeholder="Search Attributes")
-        yield Label()
+        yield FiltersWidget()
         with VerticalScroll() as v:
             yield ChildrenWidget(cached_object=self.cached_object)
 
