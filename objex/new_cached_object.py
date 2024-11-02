@@ -1,6 +1,7 @@
 from inspect import cleandoc, getdoc, getfile, isclass, ismodule, signature
 
 from rich._inspect import Inspect
+from rich._inspect import Inspect
 from rich.console import Console
 from rich.highlighter import ReprHighlighter
 from rich.pretty import Pretty, pretty_repr

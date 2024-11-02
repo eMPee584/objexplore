@@ -1,8 +1,10 @@
+from tracemalloc import start
 from typing import List
 
 import rich
 import textual
 from new_cached_object import NewCachedChildObject, NewCachedObject
+from rich._inspect import Inspect
 from rich.panel import Panel
 from rich.pretty import Pretty as RichPretty
 from rich.style import Style
@@ -10,8 +12,7 @@ from rich.text import Text
 from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Input as TextualInput
-from textual.widgets import Label, Pretty, SelectionList, Static
-from textual.widgets.selection_list import Selection
+from textual.widgets import Label, Pretty, Static
 from widgets.preview_widgets import InspectedObjectWidget
 
 console = rich.get_console()
@@ -63,8 +64,12 @@ class ChildWidget(Static):
 
 
 class ChildrenWidget(Static):
+    TOOLTIP_DELAY = 0.1
 
     search_query = reactive(default="", recompose=True)
+    show_private = reactive(default=False, recompose=True)
+    show_dunder = reactive(default=False, recompose=True)
+    type_filters = reactive(default=[], recompose=True)
 
     BINDINGS = [
         ("j", "cursor_down"),
@@ -81,34 +86,27 @@ class ChildrenWidget(Static):
         self.cached_object = cached_object
 
     def compose(self):
-        for cached_child in self.cached_object.cached_children:
-            if self.search_query.lower() in cached_child.name.lower():
-                yield ChildWidget(
-                    cached_object=cached_child,
-                )
+        for cached_child in self.get_children():
+            c = ChildWidget(
+                cached_object=cached_child,
+            )
+            # c.tooltip = Inspect(self.cached_object.obj)
+            c.tooltip = Panel(
+                "hello",
+                height=6,
+            )
+            yield c
 
-
-from textual.screen import Screen
-
-
-class FilterScreen(Screen):
-
-    def compose(self):
-        l = SelectionList[str](
-            Selection("int", "int"),
-            Selection("str", "str"),
-        )
-        l.styles.width = 20
-        yield l
-
-
-class FiltersWidget(Static):
-
-    def compose(self):
-        yield Label("Filters")
-
-    def on_click(self, event):
-        self.app.push_screen(FilterScreen())
+    def get_children(self):
+        return [
+            child
+            for child in self.cached_object.cached_children
+            if self.search_query.lower() in child.name.lower()
+            and (self.show_private or not child.name.startswith("_"))
+            and (self.show_dunder or not child.name.startswith("__"))
+        ]
+        
+    @textual.on(ChildWidget.Enter)
 
 
 class SearchableChildrenWidget(Static):
@@ -119,7 +117,6 @@ class SearchableChildrenWidget(Static):
 
     def compose(self):
         yield Input(placeholder="Search Attributes")
-        yield FiltersWidget()
         with VerticalScroll() as v:
             yield ChildrenWidget(cached_object=self.cached_object)
 
