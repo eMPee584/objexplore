@@ -36,7 +36,7 @@ class ObjectExplorer(App):
                 yield DirectoryWidget(cached_object=self.cached_object)
 
             with Vertical(classes="column") as v:
-                yield InspectedObjectWidget()
+                yield InspectedObjectWidget(selected_object=self.cached_object)
 
         yield Footer()
 

@@ -1,7 +1,6 @@
 from inspect import cleandoc, getdoc, getfile, isclass, ismodule, signature
 
 from rich._inspect import Inspect
-from rich._inspect import Inspect
 from rich.console import Console
 from rich.highlighter import ReprHighlighter
 from rich.pretty import Pretty, pretty_repr
@@ -73,7 +72,7 @@ class NewCachedChildObject:
 
 
 class NewCachedObject:
-    def __init__(self, obj, name="n/a"):
+    def __init__(self, obj, name=""):
         self.obj = obj
         self.name = name
 

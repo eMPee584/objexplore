@@ -62,6 +62,12 @@ class ChildWidget(Static):
         else:
             return str_repr
 
+    def on_enter(self, event):
+        self.app.query_one(InspectedObjectWidget).preview_object = self.cached_object
+
+    def on_leave(self, event):
+        self.app.query_one(InspectedObjectWidget).preview_object = None
+
 
 class ChildrenWidget(Static):
     TOOLTIP_DELAY = 0.1
@@ -87,15 +93,9 @@ class ChildrenWidget(Static):
 
     def compose(self):
         for cached_child in self.get_children():
-            c = ChildWidget(
+            yield ChildWidget(
                 cached_object=cached_child,
             )
-            # c.tooltip = Inspect(self.cached_object.obj)
-            c.tooltip = Panel(
-                "hello",
-                height=6,
-            )
-            yield c
 
     def get_children(self):
         return [
@@ -105,8 +105,6 @@ class ChildrenWidget(Static):
             and (self.show_private or not child.name.startswith("_"))
             and (self.show_dunder or not child.name.startswith("__"))
         ]
-        
-    @textual.on(ChildWidget.Enter)
 
 
 class SearchableChildrenWidget(Static):

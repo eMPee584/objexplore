@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
 import rich
-from new_cached_object import NewCachedChildObject
+from new_cached_object import NewCachedChildObject, NewCachedObject
 from rich._inspect import Inspect
 from rich.panel import Panel
 from rich.style import Style
@@ -98,14 +98,26 @@ class InspectedObjectWidget(Static):
     }
     """
     selected_object_label = reactive(default="")
-    selected_object: reactive[Optional[NewCachedChildObject]] = reactive(
+    selected_object: reactive[Optional[NewCachedObject]] = reactive(
+        default=None, recompose=True
+    )
+    preview_object: reactive[Optional[NewCachedObject]] = reactive(
         default=None, recompose=True
     )
 
+    def __init__(self, selected_object: NewCachedObject, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.selected_object = selected_object
+
     def compose(self):
-        if self.selected_object:
+        if self.preview_object:
+            viewing_object = self.preview_object
+        else:
+            viewing_object = self.selected_object
+
+        if viewing_object:
             with VerticalScroll() as v:
-                v.styles.border = ("round", self.selected_object.style_color)
-                v.border_title = self.selected_object.name
-                yield DocstringWidget(docstring=self.selected_object.docstring)
-                yield InspectWidget(obj=self.selected_object.obj)
+                v.styles.border = ("round", viewing_object.style_color)
+                v.border_title = viewing_object.name
+                yield DocstringWidget(docstring=viewing_object.docstring)
+                yield InspectWidget(obj=viewing_object.obj)
