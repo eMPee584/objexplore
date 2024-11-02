@@ -92,22 +92,17 @@ from textual.screen import Screen
 
 
 class FilterScreen(Screen):
+
     def compose(self):
-        yield SelectionList[str](
+        l = SelectionList[str](
             Selection("int", "int"),
             Selection("str", "str"),
         )
+        l.styles.width = 20
+        yield l
 
 
 class FiltersWidget(Static):
-
-    # DEFAULT_CSS = """
-    # FiltersWidget {
-    #     &:hover {
-    #         rule: reverse
-    #     }
-    # }
-    # """
 
     def compose(self):
         yield Label("Filters")
