@@ -89,12 +89,6 @@ class DocstringWidget(Static):
 
 
 class InspectedObjectWidget(Static):
-    DEFAULT_CSS = """
-    #pretty {
-        background: $primary-background-darken-1;
-        border: wide black;
-    }
-    """
     selected_object_label = reactive(default="")
     selected_object: reactive[Optional[NewCachedObject]] = reactive(
         default=None, recompose=True
@@ -116,7 +110,7 @@ class InspectedObjectWidget(Static):
         if viewing_object:
             with VerticalScroll() as v:
                 v.styles.border = ("round", viewing_object.style_color)
-                v.border_title = viewing_object.name
+                v.border_title = Text(viewing_object.name)
                 with VerticalScroll() as v2:
                     v2.styles.max_height = 20
                     v2.styles.border = ("round", "green")
@@ -124,6 +118,7 @@ class InspectedObjectWidget(Static):
                     v2.styles.height = "auto"
                     yield DocstringWidget(cached_object=viewing_object)
 
+                yield Pretty(viewing_object.obj)
                 # yield InspectWidget(obj=viewing_object.obj)
 
 
@@ -132,6 +127,7 @@ class BreadCrumbObjectWidget(Static):
     BreadCrumbObjectWidget {
         &:hover {
             background: $primary-background-darken-1;
+            text-style: underline;
         }
     }
     """
@@ -153,6 +149,11 @@ class BreadCrumbObjectWidget(Static):
 
 
 class BreadCrumbsWidget(Static):
+
+    def on_mount(self):
+        self.styles.border = ("round", "cyan")
+        self.border_title = "breadcrumbs"
+        self.styles.border_title_color = "white"
 
     def compose(self):
         with HorizontalGroup() as h:

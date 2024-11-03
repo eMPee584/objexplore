@@ -78,8 +78,8 @@ def explore(obj=None):
 if __name__ == "__main__":
     import pandas
 
-    # explore(obj=pandas)
-    explore(rich)
+    explore(obj=pandas)
+    # explore(rich)
     # app = ObjectExplorer(obj=pandas)
     # # app = ObjectExplorer(obj=rich)
     # # app = ObjectExplorer(obj=console)

@@ -1,3 +1,4 @@
+import pydoc
 from inspect import cleandoc, getdoc, getfile, isclass, ismodule, signature
 
 from rich._inspect import Inspect
@@ -96,6 +97,10 @@ class NewCachedObject:
         # self.help_docs = console.render_str(cleandoc(getdoc(obj) or ""))
         self.docstring = self.inspect._get_formatted_doc(obj) or ""
         self.help_docs = cleandoc(getdoc(obj) or "")
+        if not self.help_docs:
+            import re
+
+            self.help_docs = re.sub(".\x08", "", pydoc.render_doc(self.obj))
         try:
             self.file = getfile(obj)
         except Exception:
@@ -109,18 +114,6 @@ class NewCachedObject:
         self.style_color = self._get_style_color()
         self.title = self.name
         self.subtitle = self._get_subtitle()
-
-        ##################################
-        self.all_children = [
-            NewCachedChildObject(safegetattr(obj, child_label), child_label, self)
-            for child_label in dir(obj)
-        ]
-        self.public_children = [
-            child for child in self.all_children if not child.name.startswith("_")
-        ]
-        self.private_children = [
-            child for child in self.all_children if child.name.startswith("_")
-        ]
 
     def _get_str_repr(self):
         signature = self.inspect._get_signature(self.name, self.obj)
@@ -148,7 +141,11 @@ class NewCachedObject:
         return Text(text=name)
 
     def cache_children(self):
-        self.cached_children = [
-            NewCachedObject(obj=getattr(self.obj, child), name=child)
-            for child in sorted(dir(self.obj))
-        ]
+        if self.cached_children:
+            return
+        for child in sorted(dir(self.obj)):
+            try:
+                child_obj = getattr(self.obj, child)
+                self.cached_children.append(NewCachedObject(obj=child_obj, name=child))
+            except:
+                pass
