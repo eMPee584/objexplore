@@ -4,7 +4,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, TabbedContent
 from widgets.children_widgets import Input
-from widgets.preview_widgets import InspectedObjectWidget
+from widgets.preview import InspectedObjectWidget, PreviewWidget
 from widgets.search import SearchWidget
 
 
@@ -36,7 +36,7 @@ class ObjectExplorer(App):
                 yield SearchWidget(cached_object=self.cached_object)
 
             with Vertical(classes="column") as v:
-                yield InspectedObjectWidget(selected_object=self.cached_object)
+                yield PreviewWidget(cached_object=self.cached_object)
 
         yield Footer()
 
@@ -56,8 +56,8 @@ class ObjectExplorer(App):
 if __name__ == "__main__":
     import pandas
 
-    app = ObjectExplorer(obj=pandas)
-    # app = ObjectExplorer(obj=rich)
+    # app = ObjectExplorer(obj=pandas)
+    app = ObjectExplorer(obj=rich)
     # app = ObjectExplorer(obj=console)
     # app.run(inline=True)
     app.run()

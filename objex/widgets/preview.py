@@ -71,23 +71,35 @@ class InspectWidget(Static):
 
 
 class DocstringWidget(Static):
-    def __init__(self, docstring: Optional[str], *args, **kwargs):
+    DEFAULT_CSS = """
+    DocstringWidget {
+        &:hover {
+            background: $primary-background-darken-1;
+        }
+    }"""
+
+    def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.docstring = docstring
+        self.cached_object = cached_object
         self.expanded = False
 
-    def render(self) -> Panel:
-        if not self.expanded or (
-            self.docstring and len(self.docstring.split("\n")) > 1
-        ):
+    def render(self):
+        if self.expanded:
+            renderable = self.cached_object.help_docs
+        else:
+            renderable = self.cached_object.docstring
+
+        if renderable:
             return Panel(
-                renderable=self.docstring or "None",
-                height=5,
+                renderable=renderable,
                 title="[green bold italic]docstring",
                 title_align="left",
             )
         else:
-            return Panel(renderable=self.docstring or "None")
+            return ""
+
+    def on_press(self, event):
+        self.expanded = not self.expanded
 
 
 class InspectedObjectWidget(Static):
@@ -119,5 +131,14 @@ class InspectedObjectWidget(Static):
             with VerticalScroll() as v:
                 v.styles.border = ("round", viewing_object.style_color)
                 v.border_title = viewing_object.name
-                yield DocstringWidget(docstring=viewing_object.docstring)
-                yield InspectWidget(obj=viewing_object.obj)
+                yield DocstringWidget(cached_object=viewing_object)
+                # yield InspectWidget(obj=viewing_object.obj)
+
+
+class PreviewWidget(Static):
+    def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cached_object = cached_object
+
+    def compose(self):
+        yield InspectedObjectWidget(selected_object=self.cached_object)

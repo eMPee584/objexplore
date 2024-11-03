@@ -14,7 +14,7 @@ from textual.containers import VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Input as TextualInput
 from textual.widgets import Label, Pretty, Static
-from widgets.preview_widgets import InspectedObjectWidget
+from widgets.preview import InspectedObjectWidget
 
 console = rich.get_console()
 
@@ -113,6 +113,7 @@ class ChildrenWidget(Static):
         ]
 
     def matches_search_query(self, child: NewCachedObject):
+        # TODO special searching for iterables
         matches_name = self.search_query.lower() in child.name.lower()
         if not self.fuzzy_search or len(self.search_query) < 4:
 
