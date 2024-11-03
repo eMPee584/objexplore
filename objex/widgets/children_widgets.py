@@ -4,6 +4,7 @@ from typing import List
 import rich
 import textual
 from new_cached_object import NewCachedChildObject, NewCachedObject
+from rapidfuzz import fuzz
 from rich._inspect import Inspect
 from rich.panel import Panel
 from rich.pretty import Pretty as RichPretty
@@ -79,6 +80,8 @@ class ChildrenWidget(Static):
     show_private = reactive(default=False, recompose=True)
     show_dunder = reactive(default=False, recompose=True)
     type_filters = reactive(default=[], recompose=True)
+    search_help = reactive(default=False, recompose=True)
+    fuzzy_search = reactive(default=True, recompose=True)
 
     BINDINGS = [
         ("j", "cursor_down"),
@@ -104,10 +107,42 @@ class ChildrenWidget(Static):
         return [
             child
             for child in self.cached_object.cached_children
-            if self.search_query.lower() in child.name.lower()
+            if self.matches_search_query(child)
             and (self.show_private or not child.name.startswith("_"))
             and (self.show_dunder or not child.name.startswith("__"))
         ]
+
+    def matches_search_query(self, child: NewCachedObject):
+        matches_name = self.search_query.lower() in child.name.lower()
+        if not self.fuzzy_search or len(self.search_query) < 4:
+
+            if not self.search_help:
+                return matches_name
+            else:
+                return matches_name or (
+                    self.search_query.lower() in child.docstring.lower()
+                    if child.docstring is not None
+                    else False
+                )
+
+        else:
+            if self.search_query:
+                matches_name = matches_name or (
+                    fuzz.ratio(self.search_query.lower(), child.name.lower()) > 50
+                )
+                if not self.search_help:
+                    return matches_name
+                else:
+                    return matches_name or (
+                        fuzz.partial_ratio(
+                            self.search_query.lower(), child.docstring.lower()
+                        )
+                        > 50
+                        if child.docstring is not None
+                        else False
+                    )
+            else:
+                return True
 
 
 class SearchableChildrenWidget(Static):

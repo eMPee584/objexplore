@@ -56,8 +56,8 @@ class ObjectExplorer(App):
 if __name__ == "__main__":
     import pandas
 
-    # app = ObjectExplorer(obj=pandas)
-    app = ObjectExplorer(obj=rich)
+    app = ObjectExplorer(obj=pandas)
+    # app = ObjectExplorer(obj=rich)
     # app = ObjectExplorer(obj=console)
     # app.run(inline=True)
     app.run()

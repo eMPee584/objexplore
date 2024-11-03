@@ -17,11 +17,16 @@ from textual.widgets import (
     TabPane,
 )
 from textual.widgets.selection_list import Selection
-from widgets.children_widgets import ChildrenWidget, Input, SearchableChildrenWidget
+from widgets.children_widgets import ChildrenWidget, SearchableChildrenWidget
+
+
+class ResetFiltersButton(Button):
+    pass
 
 
 class ClearFiltersButton(Button):
-    pass
+    def on_mount(self):
+        self.styles.margin = (0, 1)
 
 
 class TypeSelection(Selection):
@@ -78,12 +83,19 @@ class FiltersWidget(Static):
             private_list.styles.border = ("round", "ansi_cyan")
             yield private_list
 
-        yield ClearFiltersButton(label="Clear Filters")
+        with HorizontalGroup() as h:
+            yield ResetFiltersButton(label="Reset Filters", id="reset_filters")
+            yield ClearFiltersButton(label="Clear Filters", id="clear_filters")
 
-    @textual.on(message_type=ClearFiltersButton.Pressed)
-    def on_clear_filters_pressed(self, event: ClearFiltersButton.Pressed):
-        self.query_one(selector=VisibilitySelectionList).deselect_all()
-        self.query_one(selector=TypeSelectionList).select_all()
+    @textual.on(message_type=Button.Pressed)
+    def on_reset_filters_pressed(self, event: Button.Pressed):
+        if event.button.id == "reset_filters":
+            self.query_one(selector=VisibilitySelectionList).deselect_all()
+            self.query_one(selector=TypeSelectionList).select_all()
+
+        elif event.button.id == "clear_filters":
+            self.query_one(selector=VisibilitySelectionList).deselect_all()
+            self.query_one(selector=TypeSelectionList).deselect_all()
 
 
 class MyLabel(Label):
@@ -113,8 +125,11 @@ class SearchOptionsWidget(Static):
                     name="Search Help",
                     animate=False,
                     tooltip="Search the help docs for each object",
+                    id="help_switch",
                 )
-                yield Switch(name="Fuzzy Search", animate=False)
+                yield Switch(
+                    name="Fuzzy Search", value=True, animate=False, id="fuzzy_switch"
+                )
 
 
 class SearchWidget(Static):
@@ -135,15 +150,25 @@ class SearchWidget(Static):
                 yield FiltersWidget()
                 yield SearchOptionsWidget()
 
-    @textual.on(Checkbox.Changed)
+    @textual.on(message_type=Checkbox.Changed)
     def on_checkbox_changed(self, event: Checkbox.Changed):
         if event.checkbox.id == "private":
-            self.query_one(ChildrenWidget).show_private = event.checkbox.value
+            self.query_one(selector=ChildrenWidget).show_private = event.checkbox.value
         if event.checkbox.id == "dunder":
-            self.query_one(ChildrenWidget).show_dunder = event.checkbox.value
+            self.query_one(selector=ChildrenWidget).show_dunder = event.checkbox.value
 
-    @textual.on(SelectionList.SelectedChanged)
+    @textual.on(message_type=SelectionList.SelectedChanged)
     def on_selection_list_selected_changed(
         self, event: TypeSelectionList.SelectedChanged
     ):
-        self.query_one(ChildrenWidget).type_filters = event.selection_list.selected
+        self.query_one(selector=ChildrenWidget).type_filters = (
+            event.selection_list.selected
+        )
+
+    @textual.on(message_type=Switch.Changed)
+    def on_switch_changed(self, event: Switch.Changed):
+        if event.switch.id == "help_switch":
+            self.query_one(selector=ChildrenWidget).search_help = event.switch.value
+
+        elif event.switch.id == "fuzzy_switch":
+            self.query_one(selector=ChildrenWidget).fuzzy_search = event.switch.value
