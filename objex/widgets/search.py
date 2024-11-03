@@ -17,7 +17,7 @@ from textual.widgets import (
     TabPane,
 )
 from textual.widgets.selection_list import Selection
-from widgets.children_widgets import ChildrenWidget, SearchableChildrenWidget
+from widgets.children import ChildrenWidget, SearchableChildrenWidget
 
 
 class ResetFiltersButton(Button):

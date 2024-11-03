@@ -2,8 +2,9 @@ import rich
 from new_cached_object import NewCachedObject
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.reactive import reactive
 from textual.widgets import Footer, Header, TabbedContent
-from widgets.children_widgets import Input
+from widgets.children import Input
 from widgets.preview import InspectedObjectWidget, PreviewWidget
 from widgets.search import SearchWidget
 
@@ -20,11 +21,13 @@ class ObjectExplorer(App):
         ("j", "cursor_down"),
         ("k", "cursor_up"),
     ]
+    cached_object = reactive(NewCachedObject(None), recompose=True)
 
     def __init__(self, *args, obj, **kwargs):
         super().__init__(*args, **kwargs)
         self.cached_object = NewCachedObject(obj)
         self.cached_object.cache_children()
+        self.cached_object_stack = [self.cached_object]
 
     def compose(self) -> ComposeResult:
         """Create child widgets for the app."""
@@ -52,6 +55,17 @@ class ObjectExplorer(App):
         """An action to toggle dark mode."""
         self.query_one(Input).focus()
 
+    def push_cached_object(self, cached_object: NewCachedObject):
+        self.cached_object = cached_object
+        self.cached_object_stack.append(cached_object)
+
+    def pop_cached_object(self):
+        self.cached_object_stack.pop()
+
+    def pop_to_index(self, index: int):
+        self.cached_object_stack = self.cached_object_stack[: index + 1]
+        self.cached_object = self.cached_object_stack[-1]
+
 
 def explore(obj=None):
     if obj is None:
@@ -64,7 +78,8 @@ def explore(obj=None):
 if __name__ == "__main__":
     import pandas
 
-    explore(obj=pandas)
+    # explore(obj=pandas)
+    explore(rich)
     # app = ObjectExplorer(obj=pandas)
     # # app = ObjectExplorer(obj=rich)
     # # app = ObjectExplorer(obj=console)

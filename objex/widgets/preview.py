@@ -5,7 +5,8 @@ from new_cached_object import NewCachedChildObject, NewCachedObject
 from rich._inspect import Inspect
 from rich.panel import Panel
 from rich.style import Style
-from textual.containers import Horizontal, Vertical, VerticalScroll
+from rich.text import Text
+from textual.containers import Horizontal, HorizontalGroup, Vertical, VerticalScroll
 from textual.reactive import reactive
 from textual.widgets import Label, Markdown, Pretty, Static, Switch
 
@@ -126,10 +127,45 @@ class InspectedObjectWidget(Static):
                 # yield InspectWidget(obj=viewing_object.obj)
 
 
+class BreadCrumbObjectWidget(Static):
+    DEFAULT_CSS = """
+    BreadCrumbObjectWidget {
+        &:hover {
+            background: $primary-background-darken-1;
+        }
+    }
+    """
+
+    def __init__(self, cached_object: NewCachedObject, index: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cached_object = cached_object
+        self.index = index
+
+    def on_mount(self):
+        self.styles.width = "auto"
+        self.styles.color = self.cached_object.style_color
+
+    def render(self):
+        return Text(self.cached_object.name, style=self.cached_object.style_color)
+
+    def on_click(self, event):
+        self.app.pop_to_index(self.index)
+
+
+class BreadCrumbsWidget(Static):
+
+    def compose(self):
+        with HorizontalGroup() as h:
+            for index, cached_object in enumerate(self.app.cached_object_stack):  # type: ignore
+                yield BreadCrumbObjectWidget(cached_object=cached_object, index=index)
+                yield Label(" > ")
+
+
 class PreviewWidget(Static):
     def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cached_object = cached_object
 
     def compose(self):
+        yield BreadCrumbsWidget()
         yield InspectedObjectWidget(selected_object=self.cached_object)

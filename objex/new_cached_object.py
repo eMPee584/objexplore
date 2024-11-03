@@ -11,6 +11,13 @@ highlighter = ReprHighlighter()
 console = Console()
 
 
+def safegetattr(obj, name):
+    try:
+        return getattr(obj, name)
+    except Exception:
+        return None
+
+
 class NewCachedChildObject:
     def __init__(self, obj, name, parent):
         self.obj = obj
@@ -72,7 +79,7 @@ class NewCachedChildObject:
 
 
 class NewCachedObject:
-    def __init__(self, obj, name=""):
+    def __init__(self, obj, name="root"):
         self.obj = obj
         self.name = name
 
@@ -105,7 +112,7 @@ class NewCachedObject:
 
         ##################################
         self.all_children = [
-            NewCachedChildObject(getattr(obj, child_label), child_label, self)
+            NewCachedChildObject(safegetattr(obj, child_label), child_label, self)
             for child_label in dir(obj)
         ]
         self.public_children = [

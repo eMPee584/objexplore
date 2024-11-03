@@ -72,6 +72,10 @@ class ChildWidget(Static):
     def on_leave(self, event):
         self.app.query_one(InspectedObjectWidget).preview_object = None
 
+    def on_click(self, event):
+        self.cached_object.cache_children()
+        self.app.push_cached_object(self.cached_object)  # type: ignore
+
 
 class ChildrenWidget(Static):
     TOOLTIP_DELAY = 0.1
