@@ -85,8 +85,10 @@ class NewCachedObject:
 
         # Metadata
         self.inspect = Inspect(obj=obj)
-        self.docstring = console.render_str(self.inspect._get_formatted_doc(obj) or "")
-        self.help_docs = console.render_str(cleandoc(getdoc(obj) or ""))
+        # self.docstring = console.render_str(self.inspect._get_formatted_doc(obj) or "")
+        # self.help_docs = console.render_str(cleandoc(getdoc(obj) or ""))
+        self.docstring = self.inspect._get_formatted_doc(obj) or ""
+        self.help_docs = cleandoc(getdoc(obj) or "")
         try:
             self.file = getfile(obj)
         except Exception:

@@ -53,11 +53,20 @@ class ObjectExplorer(App):
         self.query_one(Input).focus()
 
 
+def explore(obj=None):
+    if obj is None:
+        obj = globals()
+
+    app = ObjectExplorer(obj=obj)
+    app.run()
+
+
 if __name__ == "__main__":
     import pandas
 
+    explore(obj=pandas)
     # app = ObjectExplorer(obj=pandas)
-    app = ObjectExplorer(obj=rich)
-    # app = ObjectExplorer(obj=console)
-    # app.run(inline=True)
-    app.run()
+    # # app = ObjectExplorer(obj=rich)
+    # # app = ObjectExplorer(obj=console)
+    # # app.run(inline=True)
+    # app.run()

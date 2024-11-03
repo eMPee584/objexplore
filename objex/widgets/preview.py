@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.style import Style
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.reactive import reactive
-from textual.widgets import Label, Pretty, Static, Switch
+from textual.widgets import Label, Markdown, Pretty, Static, Switch
 
 
 def get_inspect(
@@ -71,35 +71,20 @@ class InspectWidget(Static):
 
 
 class DocstringWidget(Static):
-    DEFAULT_CSS = """
-    DocstringWidget {
-        &:hover {
-            background: $primary-background-darken-1;
-        }
-    }"""
+    expanded = reactive(True, layout=True)
 
     def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cached_object = cached_object
-        self.expanded = False
 
-    def render(self):
+    def compose(self):
         if self.expanded:
             renderable = self.cached_object.help_docs
         else:
             renderable = self.cached_object.docstring
 
         if renderable:
-            return Panel(
-                renderable=renderable,
-                title="[green bold italic]docstring",
-                title_align="left",
-            )
-        else:
-            return ""
-
-    def on_press(self, event):
-        self.expanded = not self.expanded
+            yield Markdown(markdown=renderable)
 
 
 class InspectedObjectWidget(Static):
@@ -131,7 +116,13 @@ class InspectedObjectWidget(Static):
             with VerticalScroll() as v:
                 v.styles.border = ("round", viewing_object.style_color)
                 v.border_title = viewing_object.name
-                yield DocstringWidget(cached_object=viewing_object)
+                with VerticalScroll() as v2:
+                    v2.styles.max_height = 20
+                    v2.styles.border = ("round", "green")
+                    v2.border_title = "docstring"
+                    v2.styles.height = "auto"
+                    yield DocstringWidget(cached_object=viewing_object)
+
                 # yield InspectWidget(obj=viewing_object.obj)
 
 
