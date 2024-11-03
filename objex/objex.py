@@ -4,8 +4,8 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, TabbedContent
 from widgets.children_widgets import Input
-from widgets.directory_widget import DirectoryWidget
 from widgets.preview_widgets import InspectedObjectWidget
+from widgets.search import SearchWidget
 
 
 class ObjectExplorer(App):
@@ -33,7 +33,7 @@ class ObjectExplorer(App):
         with Horizontal():
             with Vertical(classes="column") as v:
                 v.styles.width = "30%"
-                yield DirectoryWidget(cached_object=self.cached_object)
+                yield SearchWidget(cached_object=self.cached_object)
 
             with Vertical(classes="column") as v:
                 yield InspectedObjectWidget(selected_object=self.cached_object)

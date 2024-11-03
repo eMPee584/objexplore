@@ -140,5 +140,5 @@ class NewCachedObject:
     def cache_children(self):
         self.cached_children = [
             NewCachedObject(obj=getattr(self.obj, child), name=child)
-            for child in dir(self.obj)
+            for child in sorted(dir(self.obj))
         ]

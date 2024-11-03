@@ -24,6 +24,9 @@ class Input(TextualInput):
     def action_leave_focus(self):
         self.blur()
 
+    def on_mount(self):
+        self.styles.margin = (0, 0, 1, 0)
+
 
 class ChildWidget(Static):
     DEFAULT_CSS = """
