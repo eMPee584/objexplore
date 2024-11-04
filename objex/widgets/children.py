@@ -81,9 +81,25 @@ class ChildrenWidget(Static):
     TOOLTIP_DELAY = 0.1
 
     search_query = reactive(default="", recompose=True)
-    show_private = reactive(default=False, recompose=True)
-    show_dunder = reactive(default=False, recompose=True)
-    type_filters = reactive(default=[], recompose=True)
+    type_filters = reactive(
+        default=[
+            "class",
+            "function",
+            "method",
+            "module",
+            "int",
+            "str",
+            "float",
+            "bool",
+            "list",
+            "dict",
+            "set",
+            "tuple",
+            "builtin",
+        ],
+        recompose=True,
+    )
+    visibility_filters = reactive(default=[], recompose=True)
     search_help = reactive(default=False, recompose=True)
     fuzzy_search = reactive(default=True, recompose=True)
 
@@ -111,10 +127,25 @@ class ChildrenWidget(Static):
         return [
             child
             for child in self.cached_object.cached_children
-            if self.matches_search_query(child)
-            and (self.show_private or not child.name.startswith("_"))
-            and (self.show_dunder or not child.name.startswith("__"))
+            if self.matches_search_query(child) and self.matches_filters(child)
+            # and (self.show_private or not child.name.startswith("_"))
+            # and (self.show_dunder or not child.name.startswith("__"))
         ]
+
+    def matches_filters(self, child: NewCachedObject):
+        return True
+
+    #     if type(child.obj).__name__ in self.type_filters:
+    #         return True
+    #     if (
+    #         child.name.startswith("_")
+    #         and not child.name.startswith("__")
+    #         and "private" in self.visibility_filters
+    #     ):
+    #         return True
+    #     if child.name.startswith("__") and not self.show_dunder:
+    #         return False
+    #     return False
 
     def matches_search_query(self, child: NewCachedObject):
         # TODO special searching for iterables

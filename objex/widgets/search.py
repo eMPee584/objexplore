@@ -116,13 +116,23 @@ class SearchOptionsWidget(Static):
     def compose(self):
         with HorizontalGroup() as h:
             with VerticalGroup() as v:
-                label = MyLabel(renderable="Search Help")
-                label.tooltip = "Search the help docs for each object"
-                yield label
                 label = MyLabel(renderable="Fuzzy Search")
                 label.tooltip = "Use fuzzy searching"
                 yield label
+                label = MyLabel(renderable="Search Help")
+                label.tooltip = "Search the help docs for each object"
+                yield label
+                label = MyLabel(renderable="Search Data")
+                label.tooltip = "Search within a str() representation of the object"
+                yield label
             with VerticalGroup():
+                yield Switch(
+                    name="Fuzzy Search",
+                    value=True,
+                    animate=False,
+                    id="fuzzy_switch",
+                    tooltip="Use fuzzy searching",
+                )
                 yield Switch(
                     name="Search Help",
                     animate=False,
@@ -130,11 +140,10 @@ class SearchOptionsWidget(Static):
                     id="help_switch",
                 )
                 yield Switch(
-                    name="Fuzzy Search",
-                    value=True,
+                    name="Search Data",
                     animate=False,
-                    id="fuzzy_switch",
-                    tooltip="Use fuzzy searching",
+                    tooltip="Search within a str() representation of the object",
+                    id="data_switch",
                 )
 
 
