@@ -1,3 +1,4 @@
+from inspect import isclass, isfunction, ismodule
 from tracemalloc import start
 from typing import List
 
@@ -99,9 +100,10 @@ class ChildrenWidget(Static):
         ],
         recompose=True,
     )
-    visibility_filters = reactive(default=[], recompose=True)
+    visibility_filters = reactive(default=["private", "dunder"], recompose=True)
     search_help = reactive(default=False, recompose=True)
     fuzzy_search = reactive(default=True, recompose=True)
+    sort_by = reactive(default="name", recompose=True)
 
     BINDINGS = [
         ("j", "cursor_down"),
@@ -118,38 +120,67 @@ class ChildrenWidget(Static):
         self.cached_object = cached_object
 
     def compose(self):
-        for cached_child in self.get_children():
+        for cached_child in self.sort(self.get_children()):
             yield ChildWidget(
                 cached_object=cached_child,
             )
 
-    def get_children(self):
+    def sort(self, children: List[NewCachedObject]) -> List[NewCachedObject]:
+        if self.sort_by == "name":
+            return sorted(children, key=lambda child: child.name)
+        else:
+            return sorted(children, key=lambda child: child.type_name)
+
+    def get_children(self) -> List[NewCachedObject]:
         return [
             child
             for child in self.cached_object.cached_children
-            if self.matches_search_query(child) and self.matches_filters(child)
-            # and (self.show_private or not child.name.startswith("_"))
-            # and (self.show_dunder or not child.name.startswith("__"))
+            if self.matches_search_query(child=child)
+            and self.matches_filters(child=child)
         ]
 
     def matches_filters(self, child: NewCachedObject):
-        return True
 
-    #     if type(child.obj).__name__ in self.type_filters:
-    #         return True
-    #     if (
-    #         child.name.startswith("_")
-    #         and not child.name.startswith("__")
-    #         and "private" in self.visibility_filters
-    #     ):
-    #         return True
-    #     if child.name.startswith("__") and not self.show_dunder:
-    #         return False
-    #     return False
+        if child.name.startswith("__"):
+            if "dunder" in self.visibility_filters:
+                return True
+            else:
+                return False
+
+        if child.name.startswith("_"):
+            if "private" in self.visibility_filters:
+                return True
+            else:
+                return False
+
+        for filter in self.type_filters:
+            if filter == type(child.obj).__name__:
+                return True
+            elif filter == "class":
+                if child.isclass:
+                    return True
+            elif filter == "function":
+                if child.isfunction:
+                    return True
+            elif filter == "method":
+                if child.ismethod:
+                    return True
+            elif filter == "module":
+                if child.ismodule:
+                    return True
+            elif filter == "builtin":
+                if child.isbuiltin:
+                    return True
+
+        return False
 
     def matches_search_query(self, child: NewCachedObject):
+        if not self.search_query:
+            return True
+
         # TODO special searching for iterables
         matches_name = self.search_query.lower() in child.name.lower()
+
         if not self.fuzzy_search or len(self.search_query) < 4:
 
             if not self.search_help:

@@ -1,15 +1,19 @@
-from json import tool
-
 import textual
 from new_cached_object import NewCachedObject
 from rich.text import Text
-from textual.containers import Horizontal, HorizontalGroup, Vertical, VerticalGroup
+from textual.containers import (
+    Horizontal,
+    HorizontalGroup,
+    VerticalGroup,
+    VerticalScroll,
+)
 from textual.events import Mount
 from textual.screen import Screen
 from textual.widgets import (
     Button,
     Checkbox,
     Label,
+    Select,
     SelectionList,
     Static,
     Switch,
@@ -21,10 +25,16 @@ from widgets.children import ChildrenWidget, SearchableChildrenWidget
 
 
 class ResetFiltersButton(Button):
-    pass
+    def on_mount(self):
+        self.styles.margin = (0, 1)
 
 
 class ClearFiltersButton(Button):
+    def on_mount(self):
+        self.styles.margin = (0, 1)
+
+
+class ShowAllButton(Button):
     def on_mount(self):
         self.styles.margin = (0, 1)
 
@@ -36,7 +46,7 @@ class TypeSelection(Selection):
 
 class VisibilitySelection(Selection):
     def __init__(self, prompt, *args, **kwargs):
-        super().__init__(prompt, prompt, initial_state=False, *args, **kwargs)
+        super().__init__(prompt, prompt, initial_state=True, *args, **kwargs)
 
 
 class TypeSelectionList(SelectionList):
@@ -76,21 +86,23 @@ class FiltersWidget(Static):
             type_list.styles.border = ("round", "green")
             yield type_list
             private_list = VisibilitySelectionList(
-                VisibilitySelection(prompt="Private"),
-                VisibilitySelection(prompt="Dunder"),
+                VisibilitySelection(prompt="private"),
+                VisibilitySelection(prompt="dunder"),
+                id="visibility_list",
             )
+            private_list.tooltip = "Show private attributes (beginning with _) or dunder attributes (beginning with __)"
             private_list.border_title = "Visibility"
             private_list.styles.border = ("round", "ansi_cyan")
             yield private_list
 
         with HorizontalGroup() as h:
-            yield ResetFiltersButton(label="Reset Filters", id="reset_filters")
+            yield ShowAllButton(label="Select All", id="select_all", variant="primary")
             yield ClearFiltersButton(label="Clear Filters", id="clear_filters")
 
     @textual.on(message_type=Button.Pressed)
-    def on_reset_filters_pressed(self, event: Button.Pressed):
-        if event.button.id == "reset_filters":
-            self.query_one(selector=VisibilitySelectionList).deselect_all()
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "select_all":
+            self.query_one(selector=VisibilitySelectionList).select_all()
             self.query_one(selector=TypeSelectionList).select_all()
 
         elif event.button.id == "clear_filters":
@@ -125,6 +137,9 @@ class SearchOptionsWidget(Static):
                 label = MyLabel(renderable="Search Data")
                 label.tooltip = "Search within a str() representation of the object"
                 yield label
+                label = MyLabel(renderable="Sort by")
+                label.tooltip = "Choose how to sort the results"
+                yield label
             with VerticalGroup():
                 yield Switch(
                     name="Fuzzy Search",
@@ -145,6 +160,16 @@ class SearchOptionsWidget(Static):
                     tooltip="Search within a str() representation of the object",
                     id="data_switch",
                 )
+                select = Select(
+                    prompt="Sort by",
+                    options=[("Name", "name"), ("Type", "type")],
+                    value="name",
+                    allow_blank=False,
+                    tooltip="Choose how to sort the results",
+                    id="sort_by",
+                )
+                select.styles.width = 20
+                yield select
 
 
 class SearchWidget(Static):
@@ -162,23 +187,22 @@ class SearchWidget(Static):
             with TabPane(title="Search"):
                 yield SearchableChildrenWidget(cached_object=self.cached_object)
             with TabPane(title="Options"):
-                yield FiltersWidget()
-                yield SearchOptionsWidget()
-
-    @textual.on(message_type=Checkbox.Changed)
-    def on_checkbox_changed(self, event: Checkbox.Changed):
-        if event.checkbox.id == "private":
-            self.query_one(selector=ChildrenWidget).show_private = event.checkbox.value
-        if event.checkbox.id == "dunder":
-            self.query_one(selector=ChildrenWidget).show_dunder = event.checkbox.value
+                with VerticalScroll():
+                    yield FiltersWidget()
+                    yield SearchOptionsWidget()
 
     @textual.on(message_type=SelectionList.SelectedChanged)
     def on_selection_list_selected_changed(
         self, event: TypeSelectionList.SelectedChanged
     ):
-        self.query_one(selector=ChildrenWidget).type_filters = (
-            event.selection_list.selected
-        )
+        if event.selection_list.id == "type_list":
+            self.query_one(selector=ChildrenWidget).type_filters = (
+                event.selection_list.selected
+            )
+        elif event.selection_list.id == "visibility_list":
+            self.query_one(selector=ChildrenWidget).visibility_filters = (
+                event.selection_list.selected
+            )
 
     @textual.on(message_type=Switch.Changed)
     def on_switch_changed(self, event: Switch.Changed):
@@ -187,3 +211,8 @@ class SearchWidget(Static):
 
         elif event.switch.id == "fuzzy_switch":
             self.query_one(selector=ChildrenWidget).fuzzy_search = event.switch.value
+
+    @textual.on(message_type=Select.Changed)
+    def on_select_changed(self, event: Select.Changed):
+        if event.select.id == "sort_by":
+            self.query_one(selector=ChildrenWidget).sort_by = event.value

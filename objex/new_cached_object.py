@@ -1,5 +1,15 @@
 import pydoc
-from inspect import cleandoc, getdoc, getfile, isclass, ismodule, signature
+from inspect import (
+    cleandoc,
+    getdoc,
+    getfile,
+    isbuiltin,
+    isclass,
+    isfunction,
+    ismethod,
+    ismodule,
+    signature,
+)
 
 from rich._inspect import Inspect
 from rich.console import Console
@@ -83,6 +93,8 @@ class NewCachedObject:
     def __init__(self, obj, name="root"):
         self.obj = obj
         self.name = name
+        self.type = type(obj)
+        self.type_name = self.type.__name__
 
         self.cached_children = []
 
@@ -90,6 +102,9 @@ class NewCachedObject:
         self.isclass = isclass(obj)
         self.iscallable = callable(obj)
         self.ismodule = ismodule(obj)
+        self.ismethod = ismethod(obj)
+        self.isfunction = isfunction(obj)
+        self.isbuiltin = isbuiltin(obj)
 
         # Metadata
         self.inspect = Inspect(obj=obj)
