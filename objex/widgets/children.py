@@ -1,4 +1,4 @@
-from inspect import isclass, isfunction, ismodule
+from inspect import isasyncgen, isclass, isfunction, ismodule
 from tracemalloc import start
 from typing import List
 
@@ -125,11 +125,29 @@ class ChildrenWidget(Static):
                 cached_object=cached_child,
             )
 
+    def move_private_attributes_to_end(
+        self, children: List[NewCachedObject]
+    ) -> List[NewCachedObject]:
+        # sorted(dir(pd), key=lambda x: (x.startswith("__"), x.startswith('_') and not x.startswith('__'), x))
+        return sorted(
+            children,
+            key=lambda child: (
+                child.name.startswith("__"),
+                child.name.startswith("_") and not child.name.startswith("__"),
+                child.name,
+            ),
+        )
+
     def sort(self, children: List[NewCachedObject]) -> List[NewCachedObject]:
+
         if self.sort_by == "name":
-            return sorted(children, key=lambda child: child.name)
+            return self.move_private_attributes_to_end(
+                sorted(children, key=lambda child: child.name)
+            )
         else:
-            return sorted(children, key=lambda child: child.type_name)
+            return self.move_private_attributes_to_end(
+                sorted(children, key=lambda child: child.type_name)
+            )
 
     def get_children(self) -> List[NewCachedObject]:
         return [
@@ -140,6 +158,8 @@ class ChildrenWidget(Static):
         ]
 
     def matches_filters(self, child: NewCachedObject):
+        if child.type == type(None):
+            return True
 
         if child.name.startswith("__"):
             if "dunder" in self.visibility_filters:
@@ -171,6 +191,26 @@ class ChildrenWidget(Static):
             elif filter == "builtin":
                 if child.isbuiltin:
                     return True
+
+        if any(
+            [
+                child.isabstract,
+                child.isasyncgen,
+                child.isasyncgenfunction,
+                child.iscoroutine,
+                child.iscoroutinefunction,
+                child.isdatadescriptor,
+                child.isgenerator,
+                child.isgeneratorfunction,
+                child.ismethoddescriptor,
+                child.ismethodwrapper,
+                child.isroutine,
+                child.istraceback,
+                child.isawaitable,
+                child.iscode,
+            ]
+        ):
+            return True
 
         return False
 

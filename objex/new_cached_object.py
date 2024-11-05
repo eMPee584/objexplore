@@ -1,32 +1,40 @@
 import pydoc
+import re
 from inspect import (
     cleandoc,
     getdoc,
     getfile,
+    getsource,
+    isabstract,
+    isasyncgen,
+    isasyncgenfunction,
+    isawaitable,
     isbuiltin,
     isclass,
+    iscode,
+    iscoroutine,
+    iscoroutinefunction,
+    isdatadescriptor,
     isfunction,
+    isgenerator,
+    isgeneratorfunction,
     ismethod,
+    ismethoddescriptor,
+    ismethodwrapper,
     ismodule,
+    isroutine,
+    istraceback,
     signature,
 )
 
 from rich._inspect import Inspect
 from rich.console import Console
 from rich.highlighter import ReprHighlighter
-from rich.pretty import Pretty, pretty_repr
-from rich.style import Style
+from rich.pretty import Pretty
 from rich.text import Text
 
 highlighter = ReprHighlighter()
 console = Console()
-
-
-def safegetattr(obj, name):
-    try:
-        return getattr(obj, name)
-    except Exception:
-        return None
 
 
 class NewCachedChildObject:
@@ -105,26 +113,49 @@ class NewCachedObject:
         self.ismethod = ismethod(obj)
         self.isfunction = isfunction(obj)
         self.isbuiltin = isbuiltin(obj)
+        # Weird types
+        self.isabstract = isabstract(obj)
+        self.isasyncgen = isasyncgen(obj)
+        self.isasyncgenfunction = isasyncgenfunction(obj)
+        self.iscoroutine = iscoroutine(obj)
+        self.iscoroutinefunction = iscoroutinefunction(obj)
+        self.isdatadescriptor = isdatadescriptor(obj)
+        self.isgenerator = isgenerator(obj)
+        self.isgeneratorfunction = isgeneratorfunction(obj)
+        self.ismethoddescriptor = ismethoddescriptor(obj)
+        self.ismethodwrapper = ismethodwrapper(obj)
+        self.isroutine = isroutine(obj)
+        self.istraceback = istraceback(obj)
+        self.isawaitable = isawaitable(obj)
+        self.iscode = iscode(obj)
+
+        try:
+            self.source = getsource(self.obj)  # type: ignore
+        except Exception:
+            self.source = ""
 
         # Metadata
         self.inspect = Inspect(obj=obj)
-        # self.docstring = console.render_str(self.inspect._get_formatted_doc(obj) or "")
-        # self.help_docs = console.render_str(cleandoc(getdoc(obj) or ""))
+
         self.docstring = self.inspect._get_formatted_doc(obj) or ""
         self.help_docs = cleandoc(getdoc(obj) or "")
         if not self.help_docs:
-            import re
-
             self.help_docs = re.sub(".\x08", "", pydoc.render_doc(self.obj))
+
         try:
             self.file = getfile(obj)
+
         except Exception:
             self.file = None
+
         try:
             self.signature = signature(obj)
         except Exception:
             self.signature = None
 
+        self.str_data = str(obj)
+
+        # Design
         self.str_repr = self._get_str_repr()
         self.style_color = self._get_style_color()
         self.title = self.name

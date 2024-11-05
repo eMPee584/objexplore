@@ -8,7 +8,16 @@ from rich.style import Style
 from rich.text import Text
 from textual.containers import Horizontal, HorizontalGroup, Vertical, VerticalScroll
 from textual.reactive import reactive
-from textual.widgets import Label, Markdown, Pretty, Static, Switch
+from textual.widgets import (
+    Label,
+    Markdown,
+    Pretty,
+    Static,
+    Switch,
+    TabbedContent,
+    TabPane,
+    TextArea,
+)
 
 
 def get_inspect(
@@ -71,21 +80,36 @@ class InspectWidget(Static):
         self.obj = obj
 
 
-class DocstringWidget(Static):
-    expanded = reactive(True, layout=True)
+class DocsWidget(Static):
+    expanded = reactive(False, layout=True)
 
     def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cached_object = cached_object
 
-    def compose(self):
-        if self.expanded:
-            renderable = self.cached_object.help_docs
+    def on_mount(self):
+        self.styles.border = ("round", "green")
+        if not self.expanded:
+            self.styles.max_height = 20
         else:
-            renderable = self.cached_object.docstring
+            self.styles.max_height = None
 
-        if renderable:
-            yield Markdown(markdown=renderable)
+    def compose(self):
+        with VerticalScroll():
+            if self.cached_object.docstring:
+                with TabbedContent():
+                    with TabPane("Docstring"):
+                        yield Markdown(self.cached_object.docstring)
+                    with TabPane("Help Docs"):
+                        yield Markdown(self.cached_object.help_docs)
+                    with TabPane("Source"):
+                        yield TextArea(
+                            self.cached_object.source, read_only=True, language="python"
+                        )
+            else:
+                with TabbedContent():
+                    with TabPane("Help Docs"):
+                        yield Static(self.cached_object.help_docs)
 
 
 class InspectedObjectWidget(Static):
@@ -108,18 +132,12 @@ class InspectedObjectWidget(Static):
             viewing_object = self.selected_object
 
         if viewing_object:
-            with VerticalScroll() as v:
-                v.styles.border = ("round", viewing_object.style_color)
-                v.border_title = Text(viewing_object.name)
-                with VerticalScroll() as v2:
-                    v2.styles.max_height = 20
-                    v2.styles.border = ("round", "green")
-                    v2.border_title = "docstring"
-                    v2.styles.height = "auto"
-                    yield DocstringWidget(cached_object=viewing_object)
+            yield DocsWidget(cached_object=viewing_object)
 
-                yield Pretty(viewing_object.obj)
-                # yield InspectWidget(obj=viewing_object.obj)
+            p = Pretty(viewing_object.obj)
+            p.styles.border = ("round", "gray")
+            yield p
+            # yield InspectWidget(obj=viewing_object.obj)
 
 
 class BreadCrumbObjectWidget(Static):
@@ -151,7 +169,7 @@ class BreadCrumbObjectWidget(Static):
 class BreadCrumbsWidget(Static):
 
     def on_mount(self):
-        self.styles.border = ("round", "cyan")
+        self.styles.border = ("round", "gray")
         self.border_title = "breadcrumbs"
         self.styles.border_title_color = "white"
 
@@ -166,6 +184,9 @@ class PreviewWidget(Static):
     def __init__(self, cached_object: NewCachedObject, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cached_object = cached_object
+
+    # def on_mount(self):
+    #     self.styles.
 
     def compose(self):
         yield BreadCrumbsWidget()

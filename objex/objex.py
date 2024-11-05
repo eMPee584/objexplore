@@ -39,6 +39,7 @@ class ObjectExplorer(App):
                 yield SearchWidget(cached_object=self.cached_object)
 
             with Vertical(classes="column") as v:
+                v.styles.height = "auto"
                 yield PreviewWidget(cached_object=self.cached_object)
 
         yield Footer()
@@ -80,8 +81,14 @@ if __name__ == "__main__":
 
     explore(obj=pandas)
     # explore(rich)
+    import inspect
+
+    import pandas
+
+    # frame = inspect.currentframe()
+    # explore(rich.get_console())
+    # explore(frame)
     # app = ObjectExplorer(obj=pandas)
     # # app = ObjectExplorer(obj=rich)
-    # # app = ObjectExplorer(obj=console)
     # # app.run(inline=True)
     # app.run()

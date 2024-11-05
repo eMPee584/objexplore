@@ -140,6 +140,7 @@ class SearchOptionsWidget(Static):
                 label = MyLabel(renderable="Sort by")
                 label.tooltip = "Choose how to sort the results"
                 yield label
+
             with VerticalGroup():
                 yield Switch(
                     name="Fuzzy Search",
